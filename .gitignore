@@ -1,7 +1,12 @@
 venv/
 Acquisitions/
 .vscode/
+Weights/
 *.hdf5
+*.h5
+logs/
+*.p
+temp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
