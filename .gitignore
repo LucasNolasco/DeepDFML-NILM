@@ -7,6 +7,8 @@ Weights/
 logs/
 *.p
 temp/
+Imagens/
+*.pem
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

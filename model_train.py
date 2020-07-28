@@ -6,6 +6,7 @@ from keras.models import load_model
 from keras.layers import Conv1D, LeakyReLU, Dense, Flatten, MaxPooling1D, Dropout, BatchNormalization
 from random import shuffle
 from keras.callbacks import TensorBoard
+from random import randrange
 
 DATASET_PATH = "Synthetic_1_iHall.hdf5"
 SIGNAL_LENGTH = 12800
@@ -32,10 +33,10 @@ def cutData(rawSamples, rawEvents, rawLabels, outputSignalLength):
     output_y = np.array([])
 
     for sample, event, label in zip(rawSamples, rawEvents, rawLabels):
-        initIndex = 0
+        initIndex = randrange(0, outputSignalLength)
         while (initIndex + outputSignalLength) < len(sample):
             ev = np.argwhere(event[initIndex : initIndex + outputSignalLength] != 0) # Verifica se há algum evento nesse recorte
-            if len(ev) > 0:
+            if len(ev) > 0 and event[initIndex + ev[0][0]] == 1:
                 out = np.zeros(29)
                 out[label[0] + 3] = 1
                 out[0] = ev[0][0]/SIGNAL_LENGTH
@@ -58,11 +59,9 @@ def cutData(rawSamples, rawEvents, rawLabels, outputSignalLength):
 
 # divide os dados em partes de treino e teste
 def splitData(x, y, ratio):
-    '''
-    z = zip(x, y)
+    z = list(zip(x, y))
     shuffle(z)
     x, y = zip(*z)
-    '''
 
     x_train = np.array([])
     y_train = np.array([])
@@ -113,22 +112,22 @@ def buildModel():
     model.add(Conv1D(filters=60, kernel_size=9, input_shape=(SIGNAL_LENGTH, 1)))
     model.add(LeakyReLU(alpha = 0.1))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     #model.add(Dropout(rate=0.25))
     model.add(Conv1D(filters=40, kernel_size=9))
     model.add(LeakyReLU(alpha = 0.1))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     #model.add(Dropout(rate=0.25))
     model.add(Conv1D(filters=40, kernel_size=9))
     model.add(LeakyReLU(alpha = 0.1))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     #model.add(Dropout(rate=0.25))
     model.add(Conv1D(filters=20, kernel_size=9))
     model.add(LeakyReLU(alpha = 0.1))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     #model.add(Dropout(rate=0.25))
     model.add(Flatten())
     model.add(Dense(300))
