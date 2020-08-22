@@ -135,6 +135,7 @@ def cutData(rawSamples, rawEvents, rawLabels, outputSignalLength):
             for _ in range(AUGMENTATION_RATIO):
                 out_detection = np.zeros((N_GRIDS, 1))
                 out_classification = np.zeros((N_GRIDS, N_CLASS))
+                out_classification_classic = np.zeros((N_GRIDS, N_CLASS))
                 out_type = np.zeros((N_GRIDS, 3))   
 
                 '''
@@ -142,7 +143,7 @@ def cutData(rawSamples, rawEvents, rawLabels, outputSignalLength):
                     out_classification[i][N_CLASS] = 1
                 '''
 
-                randomizedInitCoordinates = initIndex - randrange(max(0, initIndex + outputSignalLength + int(MARGIN_RATIO * outputSignalLength) - len(sample)), min(outputSignalLength, initIndex - int(MARGIN_RATIO * outputSignalLength)))
+                randomizedInitCoordinates = initIndex - randrange(0, outputSignalLength)
                 for grid in range(N_GRIDS):
                     #gridEv = np.argwhere(event[randomizedInitCoordinates + (grid * gridLength) : randomizedInitCoordinates + (grid + 1) * gridLength] != 0)
                     if initIndex >= randomizedInitCoordinates + (grid * gridLength) and initIndex < randomizedInitCoordinates + (grid + 1) * gridLength:
@@ -157,12 +158,22 @@ def cutData(rawSamples, rawEvents, rawLabels, outputSignalLength):
                     for load in events_duration:
                         begin_coord = randomizedInitCoordinates + (grid * gridLength)
                         end_coord = begin_coord + gridLength
-                        out_classification[grid][load[0]] = max(0, (min(end_coord, load[2]) - max(begin_coord, load[1])) / gridLength)
-                        '''
-                        if (begin_coord + 0.15 * gridLength <= load[2] and begin_coord >= load[1]) or (end_coord < load[2] and end_coord > load[1]):
-                            out_classification[grid][load[0]] = 1
-                            out_classification[grid][N_CLASS] = 0      
-                        '''
+                        out_classification[grid][load[0]] = max(out_classification[grid][load[0]], (min(end_coord, load[2]) - max(begin_coord, load[1])) / gridLength)
+                        
+                        if (begin_coord <= load[2] and begin_coord >= load[1]) or (end_coord < load[2] and end_coord > load[1]):
+                            out_classification_classic[grid][load[0]] = 1
+                            #out_classification_classic[grid][N_CLASS] = 0      
+
+                        args_class = np.argwhere(out_classification[grid] > 0)
+                        args_class_classic = np.argwhere(out_classification_classic[grid] > 0)
+                        for new, old in zip(args_class, args_class_classic):
+                            if new != old or len(args_class) != len(args_class_classic):
+                                print("Wrong mapping")
+                                print(events_duration)
+                                print(randomizedInitCoordinates, randomizedInitCoordinates + 12800)
+                                print(out_classification)
+                                print(out_classification_classic)
+                                exit(-1)
 
                 if output_x.size == 0:
                     output_x = np.expand_dims(sample[randomizedInitCoordinates - int(MARGIN_RATIO * outputSignalLength) : randomizedInitCoordinates + outputSignalLength + int(MARGIN_RATIO * outputSignalLength)], axis = 0)
@@ -247,82 +258,26 @@ def processResult(y_detection, y_type, y_classification):
     event_type = []
     classification = []
 
-    '''
-    grid_with_events = 0
     for grid in range(N_GRIDS):
-        if np.argmax(y_type[grid] != 2):
-            grid_with_events = grid
-
-    if np.argmax(y_type[grid_with_events]) == 1:
-        loads = np.argwhere(np.average(y_classification[:grid_with_events + 1], axis=0) > 0.3)
-    else:
-        loads = np.argwhere(np.average(y_classification[grid_with_events:], axis=0) > 0.3)
-    '''
+        if np.argmax(y_type[grid]) != 2:
+            loads = np.argwhere(np.max(y_classification[grid], axis=0) > 0.5)
 
     for grid in range(N_GRIDS):
         detection.append(int((grid + y_detection[grid][0]) * SIGNAL_LENGTH / N_GRIDS) + int(MARGIN_RATIO * SIGNAL_LENGTH))
         event_type.append([np.argmax(y_type[grid]), np.max(y_type[grid])])
         
-        grid_classes = []
-        #if (event_type[-1][0] == 0 and y_detection[grid][0] < round(SIGNAL_LENGTH / N_GRIDS) * (1 - 0.15)) or \
-        #   (event_type[-1][0] == 1 and y_detection[grid][0] > round(SIGNAL_LENGTH / N_GRIDS) * 0.15) or \
-        '''
-        if event_type[-1][0] == 2: 
-            loads = np.argwhere(y_classification[grid] > 0.5)
-            for l in loads:
-                grid_classes.append([l[0], y_classification[grid][l[0]]])
-        elif (event_type[-1][0] == 0 and grid < N_GRIDS - 1):
-            loads = np.argwhere(y_classification[grid + 1] > 0.5)
-            for l in loads:
-                grid_classes.append([l[0], y_classification[grid + 1][l[0]]])
-        elif (event_type[-1][0] == 1 and grid > 0):
-            loads = np.argwhere(y_classification[grid - 1] > 0.5)
-            for l in loads:
-                grid_classes.append([l[0], y_classification[grid - 1][l[0]]])
-        '''
-        '''
-        if grid > 0 and grid < N_GRIDS - 1:
-            loads = np.argwhere(np.sum(y_classification[grid - 1 : grid + 2], axis = 0) > 0.6 * 3)
-        elif grid > 0:
-            loads = np.argwhere(np.sum(y_classification[grid - 1 : grid + 1], axis = 0) > 0.4 * 2)
-        else:
-            loads = np.argwhere(np.sum(y_classification[grid : grid + 2], axis = 0) > 0.4 * 2)
-        '''
-
-        loads = np.argwhere(np.max(y_classification, axis=0) >= 0.15)
-        for l in loads:
-            grid_classes.append([l[0], y_classification[grid][l[0]]])
+        #grid_classes = []
+        #loads = np.argwhere(np.max(y_classification, axis=0) > 0.5)
+        #for l in loads:
+        #    grid_classes.append([l[0], y_classification[grid][l[0]]])
 
         #for l in range(26):
         #    grid_classes.append([l, y_classification[grid][l]])
+        
+        grid_classes = []
+        for l in loads:
+            grid_classes.append([l[0], y_classification[grid][l[0]]])
         classification.append(grid_classes)
-
-        '''
-        if np.argmax(y_type[grid]) == 0 and grid > 0:
-            class_found = np.argmax(np.absolute(np.subtract(y_classification[grid], y_classification[grid - 1]))[:N_CLASS])
-            classification.append([[class_found, y_classification[grid][class_found]]])
-        elif np.argmax(y_type[grid]) == 1 and grid < N_GRIDS - 1:
-            class_found = np.argmax(np.absolute(np.subtract(y_classification[grid], y_classification[grid + 1]))[:N_CLASS])
-            classification.append([[class_found, y_classification[grid][class_found]]])
-        else:
-            class_found = np.argmax(y_classification[grid])
-            classification.append([[class_found, y_classification[grid][class_found]]])
-        '''
-
-    '''
-    for grid in range(N_GRIDS):
-        if (event_type[grid][0] == 2 and classification[grid][0] != N_CLASS):
-            if event_type[grid][1] > classification[grid][1]:
-                classification[grid][0] = N_CLASS
-            else:
-                event_type[grid][0] = np.argmax(y_type[grid][:2])
-        if (event_type[grid][0] != 2 and classification[grid][0] == N_CLASS):
-            if event_type[grid][1] > classification[grid][1]:
-                classification[grid][0] = np.argmax(y_classification[grid][:N_CLASS])
-                classification[grid][1] = np.max(y_classification[grid][:N_CLASS])
-            else:
-                event_type[grid][0] = 2
-    '''
 
     return detection, event_type, classification
 
@@ -332,15 +287,16 @@ def suppression(detection, event_type, classification):
     for grid in range(len(detection)):
         if event_type[grid][0] != 2:
             events.append([[detection[grid], 1], event_type[grid], classification[grid]])
-
+        '''
         if event_type[grid][0] == 0:
             if grid > 0 and len(classification[grid]) != 0:
                 max_diff = 0
-                event = [0, 0]
+                event = [-1, 0]
                 for load, previous_load in zip(np.average(classification[grid:],axis=0), np.average(classification[:grid],axis=0)):
                     if abs(load[1] - previous_load[1]) > abs(max_diff):# and load[0] != N_CLASS: # and load[1] >= 0.6:
                         max_diff = load[1] - previous_load[1]
-                        event = np.copy(load)
+                        event[0] = load[0]
+                        event[1] = load[1]
                     
                 if max_diff < 0:
                     max_diff *= -1
@@ -354,11 +310,13 @@ def suppression(detection, event_type, classification):
         elif event_type[grid][0] == 1:
             if grid < N_GRIDS - 1 and len(classification[grid]) != 0:
                 max_diff = 0
-                event = [0, 0]
+                event = [-1, 0]
                 for load, next_load in zip(np.average(classification[:grid + 1], axis=0), np.average(classification[grid + 1:],axis=0)):
                     if abs(load[1] - next_load[1]) > abs(max_diff): #and load[0] != N_CLASS: # and load[1] >= 0.6:
                         max_diff = load[1] - next_load[1]
-                        event = np.copy(load)
+                        event[0] = load[0]
+                        event[1] = load[1]
+
                 if max_diff < 0:
                     max_diff *= -1
                     #event_type[grid][0] = 1 - event_type[grid][0]
@@ -368,6 +326,8 @@ def suppression(detection, event_type, classification):
             else:
                 events.append([[detection[grid], 1], event_type[grid], classification[grid]])
         
+        #print(events)
+        '''
         '''
         i = 0
         while i < len(events):
@@ -384,21 +344,6 @@ def suppression(detection, event_type, classification):
                         del events[j]
                 j += 1
             i += 1
-        '''
-
-        '''
-        if event_type[grid][0] != 2:
-            not_registered = True
-            for i in range(len(events)):
-                if events[i][2][0] == classification[grid][0]:
-                    not_registered = False
-                    if events[i][2][1] < classification[grid][1]:
-                        events[i][0][0] = detection[grid]
-                        events[i][1] = event_type[grid]
-                        events[i][2] = classification[grid]
-            
-            if not_registered:
-                events.append([[detection[grid], 1], event_type[grid], classification[grid]])
         '''
 
     return np.array(events)
@@ -472,8 +417,6 @@ def checkModel(model, x_test, y_test):
                         detection_correct += 1
                         if correct_flag and prediction[1][0] == groundTruth[1][0]:
                             totally_correct += 1
-                    #if prediction[2][0] == groundTruth[2][0]:
-                    #    classification_correct += 1
 
                     if prediction[1][0] == groundTruth[1][0]:
                         type_correct += 1
@@ -499,8 +442,10 @@ def checkModel(model, x_test, y_test):
                 truth_classification = raw_gt_classification[groundTruth_grid]
                 
                 print(detection, event_type, classification, truth_detection, truth_type, truth_classification)
-                #print(raw_type[groundTruth_grid][1], raw_classification[groundTruth_grid][1])
             
+            if total_wrong == 454:
+                print(groundTruth_type, groundTruth_classification)
+
             print("----------------------")
 
     print("Wrong: %d, Total: %d" % (total_wrong, total_events))

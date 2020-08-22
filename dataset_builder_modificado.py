@@ -30,7 +30,7 @@ synthetic_files_order = {"1": synthetic_1_order, \
                          "8": synthetic_8_order}
 
 def main():
-    arq = h5py.File("Synthetic_Full_iHall.hdf5", "w")
+    arq = h5py.File("Synthetic_Full_Power.hdf5", "w")
 
     for loads_qtd in ["1", "2", "3", "8"]:
         #data_vGrid = np.array([])
@@ -62,7 +62,7 @@ def main():
             print(addr, lab)
 
             for waveform_num in range(16):
-                #vGrid = mat['waveform' + str(waveform_num)]['vGrid'][0][0][:MAX_SAMPLE_SIZE]
+                vGrid = mat['waveform' + str(waveform_num)]['vGrid'][0][0][:MAX_SAMPLE_SIZE[loads_qtd]]
                 #iShunt = mat['waveform' + str(waveform_num)]['iShunt'][0][0]
                 iHall = mat['waveform' + str(waveform_num)]['iHall'][0][0][:MAX_SAMPLE_SIZE[loads_qtd]]
                 events_r = mat['waveform' + str(waveform_num)]['events_r'][0][0][:MAX_SAMPLE_SIZE[loads_qtd]]
@@ -71,7 +71,7 @@ def main():
                 if begin:
                     labels = np.expand_dims(lab, axis = 0)
                     #data_vGrid = np.expand_dims(vGrid, axis = 0)
-                    data_iHall = np.expand_dims(iHall, axis = 0)
+                    data_iHall = np.expand_dims(np.multiply(iHall,vGrid), axis = 0)
                     #data_iShunt = np.expand_dims(iShunt, axis = 0)
                     events = np.expand_dims(events_r, axis = 0)
                     angle = np.expand_dims(np.array([waveform_num]), axis = 0)
@@ -80,7 +80,7 @@ def main():
                 else:
                     labels = np.vstack((labels, np.expand_dims(lab, axis = 0))) # A correspondencia pode dar problema depois
                     #data_vGrid = np.vstack((data_vGrid, np.expand_dims(vGrid, axis = 0)))
-                    data_iHall = np.vstack((data_iHall, np.expand_dims(iHall, axis = 0)))
+                    data_iHall = np.vstack((data_iHall, np.expand_dims(np.multiply(iHall,vGrid), axis = 0)))
                     #data_iShunt = np.vstack((data_iShunt, np.expand_dims(iShunt, axis = 0)))
                     events = np.vstack((events, np.expand_dims(events_r, axis = 0)))
                     angle = np.vstack((angle, np.expand_dims(np.array([waveform_num]), axis = 0)))
