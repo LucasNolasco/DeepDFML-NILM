@@ -13,7 +13,7 @@ TRAIN = 0
 TEST_ALL = 1
 TEST_BEST_MODEL = 2
 
-EXECUTION_STATE = TRAIN
+EXECUTION_STATE = TEST_BEST_MODEL
 
 configs = {
     "N_GRIDS": 5, 
@@ -24,10 +24,10 @@ configs = {
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "no_detection/",
-    "FOLDER_DATA_PATH": "no_detection/", 
-    "N_EPOCHS_TRAINING": 100,
-    "INITIAL_EPOCH": 58,
+    "FOLDER_PATH": "Weights/Generalization/Except8/",
+    "FOLDER_DATA_PATH": "Weights/Generalization/Except8/", 
+    "N_EPOCHS_TRAINING": 250,
+    "INITIAL_EPOCH": 0,
     "TOTAL_MAX_EPOCHS": 250
 }
 
@@ -41,6 +41,7 @@ def main():
     dataHandler = DataHandler(configs)
 
     # Se não tiver os dados no formato necessário já organizados, faz a organização
+    '''
     if not os.path.isfile(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p"):
         print("Sorted data not found, creating new file...")
         x, ydet, yclass, ytype = dataHandler.loadData()
@@ -60,9 +61,9 @@ def main():
         dict_data = {"x_train": x_train, "x_test": x_test, "y_train": y_train, "y_test": y_test}
         pickle.dump(dict_data, open(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "wb"))
         print("Data stored")
+    '''
 
     # Combinações 1x2, 1x3, 1x8 e 3x8
-    '''
     if not os.path.isfile(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p"):
         print("Sorted data not found, creating new file...")
         xa, yadet, yaclass, yatype = dataHandler.loadData(["1", "2", "3"])
@@ -86,7 +87,6 @@ def main():
         dict_data = {"x_train": x_train, "x_test": x_test, "y_train": y_train, "y_test": y_test}
         pickle.dump(dict_data, open(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "wb"))
         print("Data stored")
-    '''
 
     dict_data = pickle.load(open(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "rb"))
     x_train = dict_data["x_train"]
@@ -97,10 +97,7 @@ def main():
     dataHandler.checkGridDistribution(y_train, y_test)
     print(x_train.shape, x_test.shape)
 
-    #weights = dataHandler.calcWeights(y_train)
-    #print(weights)
-
-    #tensorboard_callback = TensorBoard(log_dir='./logs')
+    tensorboard_callback = TensorBoard(log_dir='./logs')
     model_checkpoint = ModelCheckpoint(filepath = folderPath + "best_model.h5", monitor = 'loss', mode='min', save_best_only=True)
 
     modelHandler = ModelHandler(configs)
@@ -118,8 +115,8 @@ def main():
 
         fileEpoch = configs["INITIAL_EPOCH"]
         while fileEpoch < configs["TOTAL_MAX_EPOCHS"]:
-            model.fit(x=x_train, y=[y_train["type"], y_train["classification"]], \
-                      epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint], batch_size=32) #, class_weight=weights)
+            model.fit(x=x_train, y=[y_train["detection"], y_train["type"], y_train["classification"]], \
+                      epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint, tensorboard_callback], batch_size=32)
             
             fileEpoch += configs["N_EPOCHS_TRAINING"]
             model.save(folderPath + 'multiple_loads_multipleOutputs_' + str(signalBaseLength) + "_" + str(fileEpoch) + '.h5')
@@ -132,15 +129,13 @@ def main():
     elif EXECUTION_STATE == TEST_ALL:
         postProcessing.checkModel(ModelHandler.loadModel(folderPath + 'multiple_loads_multipleOutputs_12800_250.h5'), x_test, y_test)
         bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
-        #postProcessing.checkModel(bestModel, x_test, y_test)
+        postProcessing.checkModel(bestModel, x_test, y_test)
         MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
-        print(bestModel.compiled_metrics.metrics[0]._fn.__name__)
     
     elif EXECUTION_STATE == TEST_BEST_MODEL:
         bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
-        #postProcessing.checkModel(bestModel, x_test, y_test)
+        postProcessing.checkModel(bestModel, x_test, y_test)
         MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
-        print(bestModel.compiled_metrics.metrics[0]._fn.__name__)
 
 if __name__ == '__main__':
     main()

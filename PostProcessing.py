@@ -129,7 +129,6 @@ class PostProcessing:
             error = False
             
             result = model.predict(np.expand_dims(xi, axis = 0))
-            result = [[[0, 0, 0, 0, 0]], result[0][0], result[1][0]]
 
             raw_detection, raw_type, raw_classification = self.processResult(result[0][0], result[1][0], result[2][0])
             raw_gt_detection, raw_gt_type, raw_gt_classification = self.processResult(groundTruth_detection, groundTruth_type, groundTruth_classification)
