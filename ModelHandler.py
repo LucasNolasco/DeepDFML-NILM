@@ -49,7 +49,6 @@ class ModelHandler:
         #x = Dropout(rate=0.25)(x)
         x = Flatten()(x)
 
-        '''
         detection_output = Dense(200)(x)
         detection_output = LeakyReLU(alpha = 0.1)(detection_output)
         detection_output = Dropout(0.25)(detection_output)
@@ -57,7 +56,6 @@ class ModelHandler:
         detection_output = LeakyReLU(alpha = 0.1)(detection_output)
         detection_output = Dense(1 * self.m_ngrids, activation='sigmoid')(detection_output)
         detection_output = Reshape((self.m_ngrids, 1), name="detection")(detection_output)
-        '''
 
         classification_output = Dense(300)(x)
         classification_output = LeakyReLU(alpha = 0.1)(classification_output)
@@ -74,15 +72,16 @@ class ModelHandler:
         type_output = Reshape((self.m_ngrids, 3))(type_output)
         type_output = Softmax(axis=2, name="type")(type_output)
         
-        model = Model(inputs = input, outputs=[type_output, classification_output])
+        model = Model(inputs = input, outputs=[detection_output, type_output, classification_output])
 
-        model.compile(optimizer='adam', loss = ["categorical_crossentropy", "binary_crossentropy"], metrics=[['accuracy'], ['binary_accuracy']])
+        model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=['accuracy'])
 
         return model
 
     @staticmethod
     def loadModel(path):
         return load_model(path, custom_objects={'sumSquaredError': ModelHandler.sumSquaredError, 'KerasFocalLoss': ModelHandler.KerasFocalLoss})
+
     
     def plotModel(self, model, pathToDirectory):
         if pathToDirectory[-1] != "/":

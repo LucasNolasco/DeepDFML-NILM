@@ -5,7 +5,7 @@ class MultiLabelMetrics:
     def HammingScore(model, x, y):
         # Hamming Score: https://mmuratarat.github.io/2020-01-25/multilabel_classification_metrics.md
         accuracy = 0
-        for xi, yclass in zip(x, y["classification"]):
+        for xi, ydet, ytype, yclass in zip(x, y["detection"], y["type"], y["classification"]):
             pred = model.predict(np.expand_dims(xi, axis=0))
             prediction = np.max(pred[2][0],axis=0) > 0.5
             groundTruth = np.max(yclass,axis=0) > 0.5
@@ -26,7 +26,7 @@ class MultiLabelMetrics:
     def F1EB(model, x, y):
         # F1-eb: Paper CNN Multi-Label
         tp, len_yi, len_gt_yi = 0, 0, 0
-        for xi, yclass in zip(x, y["classification"]):
+        for xi, ydet, ytype, yclass in zip(x, y["detection"], y["type"], y["classification"]):
             pred = model.predict(np.expand_dims(xi, axis=0))
             prediction = np.max(pred[2][0],axis=0) > 0.5
             groundTruth = np.max(yclass,axis=0) > 0.5
@@ -42,9 +42,9 @@ class MultiLabelMetrics:
     def F1Macro(model, x, y):
         # F1-macro: Paper CNN Multi-Label
         accuracy = 0
-        for xi, yclass in zip(x, y["classification"]):
+        for xi, ydet, ytype, yclass in zip(x, y["detection"], y["type"], y["classification"]):
             pred = model.predict(np.expand_dims(xi, axis=0))
-            prediction = np.max(pred[1][0],axis=0) > 0.5
+            prediction = np.max(pred[2][0],axis=0) > 0.5
             groundTruth = np.max(yclass,axis=0) > 0.5
 
             intersection = sum(np.logical_and(prediction, groundTruth))
