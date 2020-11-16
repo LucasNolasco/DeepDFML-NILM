@@ -98,6 +98,7 @@ class PostProcessing:
                     #events.append([[detection[grid], 1], event_type[grid], [event]])
                     events.append([[detection[grid], 1], event_type[grid], classification[grid]])
 
+            '''
             i = 0
             while i < len(events):
                 j = 0
@@ -111,6 +112,7 @@ class PostProcessing:
                             del events[j]
                     j += 1
                 i += 1
+            '''
 
         return np.array(events)
     

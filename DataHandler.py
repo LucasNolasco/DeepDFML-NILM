@@ -16,7 +16,7 @@ class DataHandler:
             print("Erro no dicionário de configurações")
             exit(-1)
 
-    def loadData(self):
+    def loadData(self, loads_list=None):
         arq = h5py.File(self.m_datasetPath, "r")
 
         x = np.array([])
@@ -24,12 +24,15 @@ class DataHandler:
         yclass = np.array([])
         ytype = np.array([])
         
-        for load_qtd in arq.keys():
+        if loads_list is None:
+            loads_list = arq.keys()
+
+        for load_qtd in loads_list:
             print("Loading %s" % (load_qtd))
             rawSamples = arq[load_qtd]["i"]
             rawEvents = arq[load_qtd]["events"]    
             rawLabels = arq[load_qtd]["labels"]
-            comb_x, comb_ydet, comb_yclass, comb_ytype = cutData(rawSamples, rawEvents, rawLabels, self.m_signalBaseLength)
+            comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels)
             print(comb_x.shape)
 
             if 0 == x.size:
@@ -67,7 +70,7 @@ class DataHandler:
 
     def mapSignal(self, event, events_duration, initSample, eventSample):
         out_detection = np.zeros((self.m_ngrids, 1))
-        out_classification = np.zeros((self.m_ngrids, self.n_class))
+        out_classification = np.zeros((self.m_ngrids, self.m_nclass))
         out_type = np.zeros((self.m_ngrids, 3))   
 
         '''

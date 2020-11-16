@@ -74,12 +74,13 @@ class ModelHandler:
         
         model = Model(inputs = input, outputs=[detection_output, type_output, classification_output])
 
-        model.compile(optimizer='adam', loss = [sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=['accuracy'])
+        model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=['accuracy'])
 
         return model
 
-    def loadModel(self, path):
-        return load_model(path, custom_objects={'sumSquaredError': self.sumSquaredError, 'KerasFocalLoss': self.KerasFocalLoss})
+    @staticmethod
+    def loadModel(path):
+        return load_model(path, custom_objects={'sumSquaredError': ModelHandler.sumSquaredError, 'KerasFocalLoss': ModelHandler.KerasFocalLoss})
 
     
     def plotModel(self, model, pathToDirectory):
