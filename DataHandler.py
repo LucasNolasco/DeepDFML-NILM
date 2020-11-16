@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from random import randrange
+from sklearn.utils import class_weight
 
 class DataHandler:
     def __init__(self, configs):
@@ -154,3 +155,15 @@ class DataHandler:
                     dict_test[str(i)] += 1
 
         return dict_train, dict_test
+
+    def calcWeights(self, y_train):
+        ytype = np.int_(np.reshape(y_train["type"], (y_train["type"].shape[0] * y_train["type"].shape[1], y_train["type"].shape[2])))        
+        yclass = np.int_(np.reshape(y_train["classification"], (y_train["classification"].shape[0] * y_train["classification"].shape[1], y_train["classification"].shape[2])))
+
+        print(ytype.shape, yclass.shape)
+        print(ytype.dtype, yclass.dtype)
+
+        weights_type = class_weight.compute_class_weight('balanced', classes=np.unique(ytype,axis=0), y=ytype)
+        weights_class = class_weight.compute_class_weight('balanced', classes=np.unique(yclass,axis=0), y=yclass)
+
+        return [weights_type, weights_class]
