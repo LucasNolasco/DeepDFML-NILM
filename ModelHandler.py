@@ -74,7 +74,7 @@ class ModelHandler:
         
         model = Model(inputs = input, outputs=[detection_output, type_output, classification_output])
 
-        model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=['accuracy'])
+        model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
 
         return model
 

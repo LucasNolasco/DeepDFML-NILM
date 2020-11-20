@@ -24,10 +24,10 @@ configs = {
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "Weights/Generalization/Except8/",
-    "FOLDER_DATA_PATH": "Weights/Generalization/Except8/", 
-    "N_EPOCHS_TRAINING": 250,
-    "INITIAL_EPOCH": 0,
+    "FOLDER_PATH": "Weights/Generalization/1_2/",
+    "FOLDER_DATA_PATH": "Weights/Generalization/1_2/", 
+    "N_EPOCHS_TRAINING": 200,
+    "INITIAL_EPOCH": 143,
     "TOTAL_MAX_EPOCHS": 250
 }
 
@@ -66,8 +66,8 @@ def main():
     # Combinações 1x2, 1x3, 1x8 e 3x8
     if not os.path.isfile(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p"):
         print("Sorted data not found, creating new file...")
-        xa, yadet, yaclass, yatype = dataHandler.loadData(["1", "2", "3"])
-        xb, ybdet, ybclass, ybtype = dataHandler.loadData(["8"])
+        xa, yadet, yaclass, yatype = dataHandler.loadData(["1", "2", "8"])
+        xb, ybdet, ybclass, ybtype = dataHandler.loadData(["3"])
         print(xa.shape, xb.shape)
         print("Data loaded")
         x = np.vstack((xa, xb))
@@ -97,7 +97,7 @@ def main():
     dataHandler.checkGridDistribution(y_train, y_test)
     print(x_train.shape, x_test.shape)
 
-    tensorboard_callback = TensorBoard(log_dir='./logs')
+    tensorboard_callback = TensorBoard(log_dir='./' + folderDataPath + '/logs')
     model_checkpoint = ModelCheckpoint(filepath = folderPath + "best_model.h5", monitor = 'loss', mode='min', save_best_only=True)
 
     modelHandler = ModelHandler(configs)
@@ -117,6 +117,7 @@ def main():
         while fileEpoch < configs["TOTAL_MAX_EPOCHS"]:
             model.fit(x=x_train, y=[y_train["detection"], y_train["type"], y_train["classification"]], \
                       epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint, tensorboard_callback], batch_size=32)
+                      #epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint], batch_size=32)
             
             fileEpoch += configs["N_EPOCHS_TRAINING"]
             model.save(folderPath + 'multiple_loads_multipleOutputs_' + str(signalBaseLength) + "_" + str(fileEpoch) + '.h5')
@@ -130,6 +131,7 @@ def main():
         postProcessing.checkModel(ModelHandler.loadModel(folderPath + 'multiple_loads_multipleOutputs_12800_250.h5'), x_test, y_test)
         bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
         postProcessing.checkModel(bestModel, x_test, y_test)
+        MultiLabelMetrics.F1Macro(bestModel, x_train, y_train)
         MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
     
     elif EXECUTION_STATE == TEST_BEST_MODEL:
