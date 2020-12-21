@@ -56,6 +56,6 @@ class MultiLabelMetrics:
                 accuracy += 2 * tp / (2 * tp + fp_fn)
             elif union == 0 and intersection == 0:
                 accuracy += 1
-        
+                
         accuracy /= x.shape[0]
         print(accuracy)

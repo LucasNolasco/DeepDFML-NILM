@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from random import randrange
+from SignalProcessing import SignalProcessing
 
 class DataHandler:
     def __init__(self, configs):
@@ -16,7 +17,7 @@ class DataHandler:
             print("Erro no dicionário de configurações")
             exit(-1)
 
-    def loadData(self, loads_list=None):
+    def loadData(self, loads_list=None, augmentation_ratio=1, SNR=None):
         arq = h5py.File(self.m_datasetPath, "r")
 
         x = np.array([])
@@ -31,8 +32,9 @@ class DataHandler:
             print("Loading %s" % (load_qtd))
             rawSamples = arq[load_qtd]["i"]
             rawEvents = arq[load_qtd]["events"]    
-            rawLabels = arq[load_qtd]["labels"]
-            comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels)
+            rawLabels = arq[load_qtd]["labels"]                 
+
+            comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR)
             print(comb_x.shape)
 
             if 0 == x.size:
@@ -98,7 +100,7 @@ class DataHandler:
         return out_detection, out_type, out_classification
 
     # Pega os dados originais e faz recortes para diminuir o tamanho (Necessário para diminuir o tamanho do modelo)
-    def cutData(self, rawSamples, rawEvents, rawLabels):
+    def cutData(self, rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR):
         output_x = np.array([])
         output_detection = np.array([])
         output_classification = np.array([])
@@ -107,11 +109,14 @@ class DataHandler:
         for sample, event, label in zip(rawSamples, rawEvents, rawLabels):
             events_samples, events_duration = self.calcEventsDuration(event, label)
 
+            if SNR is not None: # Adiciona ruído ao sinal
+                sample = SignalProcessing.awgn(sample, SNR)
+
             for ev in events_samples:
                 eventSample = ev[0]
-                augmentation_ratio = 1
-                if "AUGMENTATION_RATIO" in self.configs:
-                    augmentation_ratio = self.configs["AUGMENTATION_RATIO"]
+                #augmentation_ratio = 1
+                #if "AUGMENTATION_RATIO" in self.configs:
+                #   augmentation_ratio = self.configs["AUGMENTATION_RATIO"]
 
                 margin_ratio = 0
                 if "MARGIN_RATIO" in self.configs:

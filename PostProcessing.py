@@ -116,7 +116,7 @@ class PostProcessing:
 
         return np.array(events)
     
-    def checkModel(self, model, x_test, y_test):
+    def checkModel(self, model, x_test, y_test, print_error=True):
         total_events = 0
         detection_correct = 0
         classification_correct = 0
@@ -172,7 +172,8 @@ class PostProcessing:
                             type_correct += 1
 
                         if(groundTruth[1][0] != prediction[1][0]) or not correct_flag:
-                            print(prediction[2], groundTruth[2], len(predict_events))
+                            if print_error:
+                                print(prediction[2], groundTruth[2], len(predict_events))
                             error = True
 
                         detection_error.append(abs(prediction[0][0] - groundTruth[0][0]))
@@ -191,10 +192,12 @@ class PostProcessing:
                     truth_type = raw_gt_type[groundTruth_grid][0]
                     truth_classification = raw_gt_classification[groundTruth_grid]
                     
-                    print(detection, event_type, classification, truth_detection, truth_type, truth_classification)
-                    #print(raw_type[groundTruth_grid][1], raw_classification[groundTruth_grid][1])
+                    if print_error:
+                        print(detection, event_type, classification, truth_detection, truth_type, truth_classification)
+                        #print(raw_type[groundTruth_grid][1], raw_classification[groundTruth_grid][1])
                 
-                print("----------------------")
+                if print_error:
+                    print("----------------------")
 
         print("Wrong: %d, Total: %d" % (total_wrong, total_events))
         print("Accuracy: %.2f, Detection Accuracy: %.2f, Classification Accuracy: %.2f, Event Type Accuracy: %.2f" % (100 * totally_correct/total_events, 100 * detection_correct/total_events, 100 * classification_correct/total_events, 100 * type_correct/total_events))
