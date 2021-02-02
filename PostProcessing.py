@@ -38,12 +38,39 @@ class PostProcessing:
         events = []
 
         for grid in range(len(detection)):            
+            if event_type[grid][0] != 2:
+                events.append([[detection[grid], 1], event_type[grid], classification[grid]])
+
+        if len(events) > 1:
+            #print("PRECISA DE SUPRESSION")
+            #print(events)
+
+            max_total_probability = 0
+            eventsCopy = events.copy()
+            events = []
+            for detectedEvent in eventsCopy:
+                if len(detectedEvent[2]) > 0:
+                    total_probability = np.sum(detectedEvent[2],axis=0)[1]
+                    if total_probability > max_total_probability:
+                        events = []
+                        events.append(detectedEvent.copy())
+                        max_total_probability = total_probability
+
+            #print(events)
+
+        return np.array(events)
+
+    '''
+    def suppression(self, detection, event_type, classification):
+        events = []
+
+        for grid in range(len(detection)):            
             if event_type[grid][0] == 0:
                 if grid > 0 and len(classification[grid]) != 0:
                     max_diff = 0
                     event = [-1, 0]
                     for load, previous_load in zip(np.max(classification[grid:],axis=0), np.max(classification[:grid],axis=0)):
-                        if abs(load[1] - previous_load[1]) > abs(max_diff) and load[1] >= 0.15:
+                        if abs(load[1] - previous_load[1]) > abs(max_diff): #and load[1] >= 0.15:
                             max_diff = load[1] - previous_load[1]
                             event[0] = load[0]
                             event[1] = load[1]
@@ -60,7 +87,7 @@ class PostProcessing:
                     max_diff = 0
                     event = [-1, 1]
                     for load in classification[grid]:
-                        if event[1] - load[1] > max_diff and load[1] > 0.1:
+                        if event[1] - load[1] > max_diff: # and load[1] > 0.1:
                             max_diff = event[1] - load[1]
                             event[0] = load[0]
                             event[1] = load[1]
@@ -73,7 +100,7 @@ class PostProcessing:
                     max_diff = 0
                     event = [-1, 1]
                     for load, next_load in zip(np.max(classification[:grid + 1], axis=0), np.max(classification[grid + 1:],axis=0)):
-                        if abs(load[1] - next_load[1]) > abs(max_diff) and load[1] >= 0.1:
+                        if abs(load[1] - next_load[1]) > abs(max_diff): #and load[1] >= 0.1:
                             max_diff = load[1] - next_load[1]
                             event[0] = load[0]
                             event[1] = load[1]
@@ -90,7 +117,7 @@ class PostProcessing:
                     max_diff = 0
                     event = [-1, 1]
                     for load in classification[grid]:
-                        if event[1] - load[1] > max_diff and load[1] > 0.1:
+                        if event[1] - load[1] > max_diff: # and load[1] > 0.1:
                             max_diff = event[1] - load[1]
                             event[0] = load[0]
                             event[1] = load[1]
@@ -98,7 +125,11 @@ class PostProcessing:
                     #events.append([[detection[grid], 1], event_type[grid], [event]])
                     events.append([[detection[grid], 1], event_type[grid], classification[grid]])
 
-            '''
+            if len(events) > 1:
+                print("PRECISA DE SUPRESSION")
+                print(events)
+
+            ---------------
             i = 0
             while i < len(events):
                 j = 0
@@ -112,9 +143,11 @@ class PostProcessing:
                             del events[j]
                     j += 1
                 i += 1
-            '''
+            -----------------
 
         return np.array(events)
+    
+    '''
     
     def checkModel(self, model, x_test, y_test, print_error=True):
         total_events = 0

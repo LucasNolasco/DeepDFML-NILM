@@ -9,6 +9,9 @@ logs/
 temp/
 Imagens/
 *.pem
+attempt_to_reduce_overfitting/
+no_detection/
+tmp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -17,23 +17,23 @@ TEST_ALL = 1
 TEST_BEST_MODEL = 2
 VISUALIZE_DATA = 4
 
-EXECUTION_STATE = TEST_BEST_MODEL
+EXECUTION_STATE = TRAIN
 
 configs = {
     "N_GRIDS": 5, 
     "SIGNAL_BASE_LENGTH": 12800, 
     "N_CLASS": 26, 
     "USE_NO_LOAD": False, 
-    "AUGMENTATION_RATIO": 1, 
+    "AUGMENTATION_RATIO": 5, 
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "Weights/MultiLabel/7/", 
-    "FOLDER_DATA_PATH": "Weights/MultiLabel/2/", 
+    "FOLDER_PATH": "", 
+    "FOLDER_DATA_PATH": "", 
     "N_EPOCHS_TRAINING": 50,
-    "INITIAL_EPOCH": 50,
+    "INITIAL_EPOCH": 0,
     "TOTAL_MAX_EPOCHS": 250,
-    "SNRdb": 10 # Nível de ruído em db
+    "SNRdb": None # Nível de ruído em db
 }
 
 def main():
@@ -133,7 +133,6 @@ def main():
         while fileEpoch < configs["TOTAL_MAX_EPOCHS"]:
             model.fit(x=x_train, y=[y_train["detection"], y_train["type"], y_train["classification"]], \
                       epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint, tensorboard_callback], batch_size=32)
-                      #epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint], batch_size=32)
             
             fileEpoch += configs["N_EPOCHS_TRAINING"]
             model.save(folderPath + 'multiple_loads_multipleOutputs_' + str(signalBaseLength) + "_" + str(fileEpoch) + '.h5')
@@ -141,6 +140,7 @@ def main():
             postProcessing.checkModel(model, x_test, y_test)
             bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
             postProcessing.checkModel(bestModel, x_test, y_test)
+            postProcessing.checkModel(bestModel, x_train, y_train)
             MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
     
     elif EXECUTION_STATE == TEST_ALL:
@@ -154,8 +154,48 @@ def main():
         bestModel = modelHandler.loadModel(folderPath + "best_model.h5", type_weights=weights)
         postProcessing.checkModel(bestModel, x_test, y_test, print_error=False)
         postProcessing.checkModel(bestModel, x_train, y_train, print_error=False)
-        MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
-        MultiLabelMetrics.F1Macro(bestModel, x_train, y_train)
+        #MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
+        #MultiLabelMetrics.F1Macro(bestModel, x_train, y_train)
+
+        from sklearn.metrics import f1_score, precision_score, recall_score     
+        for threshold in [0.5]:
+            final_prediction = []
+            final_groundTruth = []
+            for xi, yclass in zip(x_test, y_test["classification"]):
+                pred = bestModel.predict(np.expand_dims(xi, axis=0))
+                prediction = np.max(pred[2][0],axis=0) > threshold
+                groundTruth = np.max(yclass,axis=0) > threshold
+
+                final_prediction.append(prediction)
+                final_groundTruth.append(groundTruth)
+            
+            print("Threshold: {0}, F1 Macro: {1}, F1 Micro: {2}, Precision Macro: {3}, Precision Micro: {4}, Recall Macro: {5}, Recal Micro: {6}".format(\
+                  threshold, \
+                  f1_score(final_groundTruth, final_prediction, average='macro'), \
+                  f1_score(final_groundTruth, final_prediction, average='micro'), \
+                  precision_score(final_groundTruth, final_prediction, average="macro"), \
+                  precision_score(final_groundTruth, final_prediction, average="micro"), \
+                  recall_score(final_groundTruth, final_prediction, average="macro"), \
+                  recall_score(final_groundTruth, final_prediction, average="micro")))
+
+            final_prediction = []
+            final_groundTruth = []
+            for xi, yclass in zip(x_train, y_train["classification"]):
+                pred = bestModel.predict(np.expand_dims(xi, axis=0))
+                prediction = np.max(pred[2][0],axis=0) > threshold
+                groundTruth = np.max(yclass,axis=0) > threshold
+
+                final_prediction.append(prediction)
+                final_groundTruth.append(groundTruth)
+
+            print("Threshold: {0}, F1 Macro: {1}, F1 Micro: {2}, Precision Macro: {3}, Precision Micro: {4}, Recall Macro: {5}, Recal Micro: {6}".format(\
+                  threshold, \
+                  f1_score(final_groundTruth, final_prediction, average='macro'), \
+                  f1_score(final_groundTruth, final_prediction, average='micro'), \
+                  precision_score(final_groundTruth, final_prediction, average="macro"), \
+                  precision_score(final_groundTruth, final_prediction, average="micro"), \
+                  recall_score(final_groundTruth, final_prediction, average="macro"), \
+                  recall_score(final_groundTruth, final_prediction, average="micro")))
 
     elif EXECUTION_STATE == VISUALIZE_DATA:
         from sklearn.manifold import TSNE
