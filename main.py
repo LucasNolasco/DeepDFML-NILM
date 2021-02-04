@@ -12,28 +12,38 @@ import tensorflow as tf
 
 tf.config.experimental_run_functions_eagerly(True)
 
+'''
+    DATASET DATA DISTRIBUTION
+        - 832: 1 load
+        - 2688: 2 loads
+        - 3168: 3 loads
+        - 1728: 8 loads
+
+    TOTAL: 8416
+'''
+
 TRAIN = 0
 TEST_ALL = 1
 TEST_BEST_MODEL = 2
 VISUALIZE_DATA = 4
 
-EXECUTION_STATE = TRAIN
+EXECUTION_STATE = TEST_BEST_MODEL
 
 configs = {
     "N_GRIDS": 5, 
     "SIGNAL_BASE_LENGTH": 12800, 
     "N_CLASS": 26, 
     "USE_NO_LOAD": False, 
-    "AUGMENTATION_RATIO": 5, 
+    "AUGMENTATION_RATIO": 1, 
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "", 
-    "FOLDER_DATA_PATH": "", 
-    "N_EPOCHS_TRAINING": 50,
+    "FOLDER_PATH": "Weights/MultiLabel/2/", 
+    "FOLDER_DATA_PATH": "Weights/MultiLabel/2/", 
+    "N_EPOCHS_TRAINING": 0,
     "INITIAL_EPOCH": 0,
-    "TOTAL_MAX_EPOCHS": 250,
-    "SNRdb": None # Nível de ruído em db
+    "TOTAL_MAX_EPOCHS": 0,
+    "SNRdb": [50, 40, 30, 20] # Nível de ruído em db
 }
 
 def main():
@@ -48,7 +58,30 @@ def main():
     # Se não tiver os dados no formato necessário já organizados, faz a organização
     if not os.path.isfile(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p"):
         print("Sorted data not found, creating new file...")
-        x, ydet, yclass, ytype = dataHandler.loadData(SNR=configs["SNRdb"])
+        
+        if configs["SNRdb"] is not None:
+            x = np.array([])
+            ydet = np.array([])
+            yclass = np.array([])
+            ytype = np.array([])
+            for noise in configs["SNRdb"]:
+                x0, ydet0, yclass0, ytype0 = dataHandler.loadData(SNR=noise)
+                if 0 == x.size:
+                    x = np.copy(x0)
+                    ydet = np.copy(ydet0)
+                    yclass = np.copy(yclass0)
+                    ytype = np.copy(ytype0)
+                else:
+                    x = np.vstack((x, x0))
+                    ydet = np.vstack((ydet, ydet0))
+                    yclass = np.vstack((yclass, yclass0))
+                    ytype = np.vstack((ytype, ytype0))
+
+                print(x.shape)
+            
+        else:
+            x, ydet, yclass, ytype = dataHandler.loadData(SNR=configs["SNRdb"])
+
         print("Data loaded")
         x = np.reshape(x, (x.shape[0], x.shape[1],))
         print(x.shape)
@@ -137,12 +170,14 @@ def main():
             fileEpoch += configs["N_EPOCHS_TRAINING"]
             model.save(folderPath + 'multiple_loads_multipleOutputs_' + str(signalBaseLength) + "_" + str(fileEpoch) + '.h5')
 
+            '''
             postProcessing.checkModel(model, x_test, y_test)
             bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
             postProcessing.checkModel(bestModel, x_test, y_test)
             postProcessing.checkModel(bestModel, x_train, y_train)
             MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
-    
+            '''
+
     elif EXECUTION_STATE == TEST_ALL:
         postProcessing.checkModel(ModelHandler.loadModel(folderPath + 'multiple_loads_multipleOutputs_12800_250.h5'), x_test, y_test)
         bestModel = modelHandler.loadModel(folderPath + "best_model.h5")
@@ -156,7 +191,8 @@ def main():
         postProcessing.checkModel(bestModel, x_train, y_train, print_error=False)
         #MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
         #MultiLabelMetrics.F1Macro(bestModel, x_train, y_train)
-
+        
+        '''
         from sklearn.metrics import f1_score, precision_score, recall_score     
         for threshold in [0.5]:
             final_prediction = []
@@ -196,6 +232,7 @@ def main():
                   precision_score(final_groundTruth, final_prediction, average="micro"), \
                   recall_score(final_groundTruth, final_prediction, average="macro"), \
                   recall_score(final_groundTruth, final_prediction, average="micro")))
+            '''
 
     elif EXECUTION_STATE == VISUALIZE_DATA:
         from sklearn.manifold import TSNE

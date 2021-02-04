@@ -57,10 +57,10 @@ class ModelHandler:
         detection_output = Dense(1 * self.m_ngrids, activation='sigmoid')(detection_output)
         detection_output = Reshape((self.m_ngrids, 1), name="detection")(detection_output)
 
-        classification_output = Dense(200)(x)
+        classification_output = Dense(300)(x)
         classification_output = LeakyReLU(alpha = 0.1)(classification_output)
         classification_output = Dropout(0.25)(classification_output)
-        classification_output = Dense(50)(classification_output)
+        classification_output = Dense(300)(classification_output)
         classification_output = LeakyReLU(alpha=0.1)(classification_output)
         classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid')(classification_output)
         classification_output = Reshape((self.m_ngrids, (self.m_nclass)), name = "classification")(classification_output)

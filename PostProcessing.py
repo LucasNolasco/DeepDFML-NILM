@@ -39,12 +39,32 @@ class PostProcessing:
 
         for grid in range(len(detection)):            
             if event_type[grid][0] != 2:
-                events.append([[detection[grid], 1], event_type[grid], classification[grid]])
+                # events.append([[detection[grid], 1], event_type[grid], classification[grid]])  LUCAS: OLD CONFIG FOR MULTILABEL, GOTTA CHANGE IT LATER
+                if event_type[grid][0] == 0 and grid != 0:
+                    #print(classification[grid - 1], classification[grid])
+                    real_class = -1
+                    prob = 0
+                    for possible_class, possible_class_prev in zip(classification[grid], classification[grid - 1]):
+                        if possible_class[1] - possible_class_prev[1] > prob:
+                            real_class = possible_class[0]
+                            prob = possible_class[1] - possible_class_prev[1]
+
+                    #print(real_class, prob)
+                    events.append([[detection[grid], 1], event_type[grid], [[real_class, prob]]])
+                
+                elif event_type[grid][0] == 1 and grid != self.m_ngrids - 1:
+                    #print(classification[grid], classification[grid + 1])
+                    real_class = -1
+                    prob = 0
+                    for possible_class, possible_class_next in zip(classification[grid], classification[grid + 1]):
+                        if possible_class[1] - possible_class_next[1] > prob:
+                            real_class = possible_class[0]
+                            prob = possible_class[1] - possible_class_next[1]
+
+                    #print(real_class, prob)
+                    events.append([[detection[grid], 1], event_type[grid], [[real_class, prob]]])
 
         if len(events) > 1:
-            #print("PRECISA DE SUPRESSION")
-            #print(events)
-
             max_total_probability = 0
             eventsCopy = events.copy()
             events = []
@@ -178,7 +198,7 @@ class PostProcessing:
                     event_outside_margin = True
             '''
             
-            if not event_outside_margin:
+            if not event_outside_margin and len(groundTruth_events) > 0:
                 if len(predict_events) == len(groundTruth_events):
                     for prediction, groundTruth in zip(predict_events, groundTruth_events):
                         total_events += 1
