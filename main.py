@@ -10,14 +10,14 @@ from PostProcessing import PostProcessing
 from MultiLabelMetrics import MultiLabelMetrics
 import tensorflow as tf
 
-tf.config.experimental_run_functions_eagerly(True)
+#tf.config.experimental_run_functions_eagerly(True)
 
 TRAIN = 0
 TEST_ALL = 1
 TEST_BEST_MODEL = 2
 VISUALIZE_DATA = 4
 
-EXECUTION_STATE = TRAIN
+EXECUTION_STATE = TEST_BEST_MODEL
 
 configs = {
     "N_GRIDS": 5, 
@@ -28,8 +28,8 @@ configs = {
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "", 
-    "FOLDER_DATA_PATH": "", 
+    "FOLDER_PATH": "Weights/MultiLabel/2/", 
+    "FOLDER_DATA_PATH": "Weights/MultiLabel/2/", 
     "N_EPOCHS_TRAINING": 50,
     "INITIAL_EPOCH": 0,
     "TOTAL_MAX_EPOCHS": 250,

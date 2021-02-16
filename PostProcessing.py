@@ -21,7 +21,6 @@ class PostProcessing:
         event_type = []
         classification = []
         
-        #loads = np.reshape(np.arange(0, self.m_nclass), (self.m_nclass, 1))
         loads = np.argwhere(np.max(y_classification, axis=0) > 0.5)
         for grid in range(self.m_ngrids):
             detection.append(int((grid + y_detection[grid][0]) * self.m_gridLength) + int(self.m_marginRatio * self.m_signalBaseLength))
@@ -42,9 +41,6 @@ class PostProcessing:
                 events.append([[detection[grid], 1], event_type[grid], classification[grid]])
 
         if len(events) > 1:
-            #print("PRECISA DE SUPRESSION")
-            #print(events)
-
             max_total_probability = 0
             eventsCopy = events.copy()
             events = []
@@ -56,11 +52,125 @@ class PostProcessing:
                         events.append(detectedEvent.copy())
                         max_total_probability = total_probability
 
-            #print(events)
-
         return np.array(events)
+
+    # --------------------------------------------------------------------
+    #   detectEvents: Method responsible for converting the model output
+    #                 to an event list, where each event is a list on the
+    #                 following format:
+    #                       [[eventSample, probability (for now it's always 1)],
+    #                        [eventType, probability],
+    #                        [[connectedLoad, probability]]]
+    #
+    #   Parameters: 
+    #       - model: Structure of the trained model
+    #       - x_test: Input data for each example
+    #       - y_test: Expected output for each input (ground truth)
+    #
+    #   Return:
+    #       - groundTruth: list with ground truth events
+    #       - predicted: list with predicted events
+    # --------------------------------------------------------------------
+    def detectEvents(self, model, x_test, y_test):
+        groundTruth, predicted = [], []
+        for xi, groundTruth_detection, groundTruth_type, groundTruth_classification in zip(x_test, y_test["detection"], y_test["type"], y_test["classification"]):
+            result = model.predict(np.expand_dims(xi, axis = 0))
+
+            raw_detection, raw_type, raw_classification = self.processResult(result[0][0], result[1][0], result[2][0])
+            raw_gt_detection, raw_gt_type, raw_gt_classification = self.processResult(groundTruth_detection, groundTruth_type, groundTruth_classification)
+
+            predict_events = self.suppression(raw_detection, raw_type, raw_classification)
+            groundTruth_events = self.suppression(raw_gt_detection, raw_gt_type, raw_gt_classification)
+
+            predicted.append(predict_events)
+            groundTruth.append(groundTruth_events)
+
+        return groundTruth, predicted
+
+    # --------------------------------------------------------------------
+    #   PCMetric: Method to calculate the metrics PCon and PCoff.
+    #
+    #   Parameters: 
+    #       - groundTruth: List of ground truth events
+    #       - predicted: List of predicted events
+    #
+    #   Return:
+    #       - PCon: Ratio between ON events detected within 10 semicycles
+    #               of distance and the total number of events;
+    #       - PCoff: Same as PCon but considering OFF events;
+    #       - PCtotal: Same as PCon but considering both ON and OFF;
+    # --------------------------------------------------------------------
+    def PCMetric(self, groundTruth, predicted):
+        total_on = 0
+        total_off = 0
+        correct_on = 0
+        correct_off = 0
+        for gt_events, pred_events in zip(groundTruth, predicted):
+            if gt_events[0][1][0] == 0:
+                total_on += 1
+                if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
+                    correct_on += 1
+            elif gt_events[0][1][0] == 1:
+                total_off += 1
+                if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
+                    correct_off += 1
+
+        PCon = (correct_on / total_on)
+        PCoff = (correct_off / total_off)
+        PCtotal = ((correct_on + correct_off) / (total_off + total_on))
+
+        return PCon, PCoff, PCtotal
+
+    # --------------------------------------------------------------------
+    #   averageDistanceMetric: Method to calculate the metrics Don and Doff
+    #
+    #   Parameters: 
+    #       - groundTruth: List of ground truth events
+    #       - predicted: List of predicted events
+    #
+    #   Return:
+    #       - Don: Average distance between an ON event and its detection
+    #       - Doff: Average distance between an OFF event and its detection
+    #       - Dtotal: Average distance between all events and their detection
+    # --------------------------------------------------------------------
+    def averageDistanceMetric(self, groundTruth, predicted):
+        total_correct_on = 0
+        total_correct_off = 0
+        distance_sum_on = 0
+        distance_sum_off = 0
+        for gt_events, pred_events in zip(groundTruth, predicted):
+            if gt_events[0][1][0] == 0:
+                if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
+                    total_correct_on += 1
+                    distance_sum_on += abs(round(gt_events[0][0][0]/128) - round(pred_events[0][0][0]/128))
+            elif gt_events[0][1][0] == 1:
+                if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
+                    total_correct_off += 1
+                    distance_sum_off += abs(round(gt_events[0][0][0]/128) - round(pred_events[0][0][0]/128))
+
+        Don = distance_sum_on / total_correct_on
+        Doff = distance_sum_off / total_correct_off
+        Dtotal = (distance_sum_on + distance_sum_off) / (total_correct_on + total_correct_off)
+
+        return Don, Doff, Dtotal
     
     def checkModel(self, model, x_test, y_test, print_error=True):
+        groundTruth, predicted = self.detectEvents(model, x_test, y_test)
+
+        print(self.PCMetric(groundTruth, predicted))
+        print(self.averageDistanceMetric(groundTruth, predicted))
+
+    # --------------------------------------------------------------------
+    #   fullCheckModel: Old checkModel
+    #
+    #   Parameters: 
+    #       - model: Structure of the trained model
+    #       - x_test: Input data for each example
+    #       - y_test: Expected output for each input (ground truth)
+    #       - print_error: Flag to indicate if errors should be printed (helps on debugging)
+    #
+    # --------------------------------------------------------------------
+    def fullCheckModel(self, model, x_test, y_test, print_error=True):
         total_events = 0
         detection_correct = 0
         classification_correct = 0
