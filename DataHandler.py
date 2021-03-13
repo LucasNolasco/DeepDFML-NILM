@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from random import randrange
+from sklearn.model_selection import train_test_split
 from SignalProcessing import SignalProcessing
 
 class DataHandler:
@@ -159,3 +160,68 @@ class DataHandler:
                     dict_test[str(i)] += 1
 
         return dict_train, dict_test
+
+    def generateAcquisitionType(self, trainSize, augmentation=1):
+        # 1: 832
+        # 2: 2688
+        # 3: 3168
+        # 4: 1728
+
+        load_type = []
+        for k in range(augmentation):
+            for i in range(0, 832):
+                load_type.append(1)
+
+            for i in range(0, 2688, 4):
+                load_type.append(1)
+                load_type.append(2)
+                load_type.append(2)
+                load_type.append(1)
+            
+            for i in range(0, 3168, 6):
+                j = 0
+                while j < 3:
+                    j += 1
+                    load_type.append(j)
+
+                while j > 0:
+                    load_type.append(j)
+                    j -= 1
+
+            for i in range(0, 1728, 18):
+                j = 0
+                while j < 8:
+                    j += 1
+                    load_type.append(j)
+
+                while j > 1:
+                    load_type.append(j)
+                    j -= 1
+
+                load_type.append(2)
+                load_type.append(2)
+                load_type.append(1)
+
+        general = []
+        for k in range(augmentation):
+            for i in range(0, 832):
+                general.append(1)
+            for i in range(0, 2688):
+                general.append(2)
+            for i in range(0, 3168):
+                general.append(3)
+            for i in range(0, 1728):
+                general.append(8)
+
+        load_type_train, load_type_test, general_qtd_train, general_qtd_test = train_test_split(load_type, general, train_size=trainSize, random_state = 42)
+        return load_type_train, load_type_test, general_qtd_train, general_qtd_test
+
+    def checkAcquisitionType(self, yclass, load_type, general_qtd):
+        correct_order = 0
+        for classification, qtd, g_qtd in zip(yclass, load_type, general_qtd):
+            if sum(np.max(classification, axis=0) > 0.5) == qtd:
+                correct_order += 1
+            else:
+                print(sum(np.max(classification, axis=0) > 0.5), qtd, g_qtd)
+
+        print("Correct Order: {0}, Total: {1}".format(correct_order, len(yclass)))
