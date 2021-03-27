@@ -1,8 +1,9 @@
 import tensorflow as tf
 from keras import backend as K
-from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, BatchNormalization, Dropout, Dense, Reshape, Flatten, Softmax
+from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax, GlobalAveragePooling1D, Lambda
 from keras.models import Model, load_model
 from keras.utils.vis_utils import plot_model
+from kymatio.keras import Scattering1D
 
 class ModelHandler:
     def __init__(self, configs):
@@ -21,7 +22,7 @@ class ModelHandler:
             exit(-1)
 
     def buildModel(self, type_weights=None):
-        input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio), 1))
+        input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio),))
         x = Conv1D(filters=60, kernel_size=9)(input)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)

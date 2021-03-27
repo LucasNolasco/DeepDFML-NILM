@@ -3,7 +3,7 @@ import numpy as np
 class MultiLabelMetrics:
     @staticmethod
     def HammingScore(model, x, y):
-        # Hamming Score: https://mmuratarat.github.io/2020-01-25/multilabel_classification_metrics.md
+        # Hamming Score: https://mmuratarat.github.io/2020-01-25/multilabel_classification_metrics
         accuracy = 0
         for xi, yclass in zip(x, y["classification"]):
             pred = model.predict(np.expand_dims(xi, axis=0))

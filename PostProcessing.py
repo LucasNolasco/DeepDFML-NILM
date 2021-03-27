@@ -100,7 +100,7 @@ class PostProcessing:
 
             #print(events)
 
-        return np.array(events)
+        return np.array(events, dtype=object)
 
     # --------------------------------------------------------------------
     #   detectEvents: Method responsible for converting the model output
