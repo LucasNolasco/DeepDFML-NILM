@@ -172,6 +172,10 @@ class PostProcessing:
                 if general_acquisition_type[i] != target:
                     continue
     
+            if len(gt_events) == 0:
+                print(gt_events, pred_events)
+                continue
+
             if gt_events[0][1][0] == 0:
                 total_on += 1
                 if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
@@ -344,6 +348,13 @@ class PostProcessing:
 
             print("LIT-SYN-All PCmetric: {0}".format(PCmetric[4]))
             print("LIT-SYN-All Dmetric: {0}".format(Dmetric[4]))
+        
+        else:
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd))
+
+            print("LIT-SYN-All PCmetric: {0}".format(PCmetric[-1]))
+            print("LIT-SYN-All Dmetric: {0}".format(Dmetric[-1]))
 
         return PCmetric, Dmetric
 

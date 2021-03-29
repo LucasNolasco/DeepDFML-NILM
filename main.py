@@ -17,6 +17,11 @@ TRAIN_NO_KFOLD = 5
 
 EXECUTION_STATE = TRAIN_NO_KFOLD
 
+# 1: (1094, 16640, 1)
+# 2: (3362, 16640, 1)
+# 3: (3443, 16640, 1)
+# 4: (1823, 16640, 1)
+
 configs = {
     "N_GRIDS": 5, 
     "SIGNAL_BASE_LENGTH": 12800, 
@@ -26,11 +31,11 @@ configs = {
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
-    "FOLDER_PATH": "scattering/", 
-    "FOLDER_DATA_PATH": "scattering/", 
-    "N_EPOCHS_TRAINING": 500,
+    "FOLDER_PATH": "tmp/new_aug_correct/", 
+    "FOLDER_DATA_PATH": "tmp/new_aug_correct/", 
+    "N_EPOCHS_TRAINING": 250,
     "INITIAL_EPOCH": 0,
-    "TOTAL_MAX_EPOCHS": 500,
+    "TOTAL_MAX_EPOCHS": 250,
     "SNRdb": None # Nível de ruído em db
 }
 
@@ -111,8 +116,8 @@ def main():
     print(x_train.shape, x_test.shape)
 
     load_type_train, load_type_test, general_qtd_train, general_qtd_test = dataHandler.generateAcquisitionType(trainSize, augmentation=1)
-    dataHandler.checkAcquisitionType(y_train["classification"], load_type_train, general_qtd_train)
-    dataHandler.checkAcquisitionType(y_test["classification"], load_type_test, general_qtd_test)
+    # dataHandler.checkAcquisitionType(y_train["classification"], load_type_train, general_qtd_train)
+    # dataHandler.checkAcquisitionType(y_test["classification"], load_type_test, general_qtd_test)
 
     modelHandler = ModelHandler(configs)
     postProcessing = PostProcessing(configs)
@@ -165,6 +170,7 @@ def main():
                 # MultiLabelMetrics.F1Macro(bestModel, x_test, y_test)
     
     elif EXECUTION_STATE == TRAIN_NO_KFOLD:
+        weights = None
         folderPath = configs["FOLDER_PATH"]
         tensorboard_callback = TensorBoard(log_dir='./' + folderDataPath + '/logs')
         model_checkpoint = ModelCheckpoint(filepath = folderPath + "best_model.h5", monitor = 'loss', mode='min', save_best_only=True)
@@ -178,7 +184,7 @@ def main():
         fileEpoch = configs["INITIAL_EPOCH"]
         while fileEpoch < configs["TOTAL_MAX_EPOCHS"]:
             model.fit(x=x_train, y=[y_train["detection"], y_train["type"], y_train["classification"]], \
-                    epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[tensorboard_callback], batch_size=32)
+                    epochs=configs["N_EPOCHS_TRAINING"], verbose=2, callbacks=[model_checkpoint, tensorboard_callback], batch_size=32)
             
             fileEpoch += configs["N_EPOCHS_TRAINING"]
             model.save(folderPath + 'multiple_loads_multipleOutputs_' + str(signalBaseLength) + "_" + str(fileEpoch) + '.h5')

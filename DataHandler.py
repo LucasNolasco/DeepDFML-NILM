@@ -3,6 +3,8 @@ import numpy as np
 from random import randrange
 from sklearn.model_selection import train_test_split
 from SignalProcessing import SignalProcessing
+from ExponentialDetection import ExponentialDetection
+from tqdm import tqdm
 
 class DataHandler:
     def __init__(self, configs):
@@ -13,6 +15,8 @@ class DataHandler:
             self.m_gridLength = int(self.m_signalBaseLength / self.m_ngrids)
             self.configs = configs
             self.m_datasetPath = configs["DATASET_PATH"]
+
+            self.exponential = ExponentialDetection()
 
         except:
             print("Erro no dicionário de configurações")
@@ -86,8 +90,10 @@ class DataHandler:
                 out_detection[grid][0] = (eventSample - (initSample + (grid * self.m_gridLength))) / self.m_gridLength
                 if event[eventSample] == 1: # ON
                     out_type[grid][0] = 1
-                else: # OFF
+                elif event[eventSample] == -1: # OFF
                     out_type[grid][1] = 1
+                else:
+                    out_type[grid][2] = 1    
             else:
                 out_type[grid][2] = 1
             
@@ -107,7 +113,7 @@ class DataHandler:
         output_classification = np.array([])
         output_type = np.array([])
 
-        for sample, event, label in zip(rawSamples, rawEvents, rawLabels):
+        for sample, event, label in tqdm(zip(rawSamples, rawEvents, rawLabels)):
             events_samples, events_duration = self.calcEventsDuration(event, label)
 
             if SNR is not None: # Adiciona ruído ao sinal
@@ -115,30 +121,71 @@ class DataHandler:
 
             for ev in events_samples:
                 eventSample = ev[0]
-                #augmentation_ratio = 1
-                #if "AUGMENTATION_RATIO" in self.configs:
-                #   augmentation_ratio = self.configs["AUGMENTATION_RATIO"]
 
                 margin_ratio = 0
                 if "MARGIN_RATIO" in self.configs:
                     margin_ratio = self.configs["MARGIN_RATIO"]
 
-                for _ in range(augmentation_ratio):
-                    initSample = eventSample - randrange(0, self.m_signalBaseLength)
-                    out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, eventSample)
-                    signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
-                                    initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
+                initSample = eventSample - randrange(0, self.m_signalBaseLength)
+                out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, eventSample)
+                signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
+                                initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
 
-                    if output_x.size == 0:
-                        output_x = np.expand_dims(signal, axis = 0)
-                        output_detection = np.expand_dims(out_detection, axis=0)
-                        output_classification = np.expand_dims(out_classification, axis=0)
-                        output_type = np.expand_dims(out_type, axis=0)
-                    else:
-                        output_x = np.vstack((output_x, np.expand_dims(signal, axis = 0)))
-                        output_detection = np.vstack((output_detection, np.expand_dims(out_detection, axis=0)))
-                        output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
-                        output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
+                if output_x.size == 0:
+                    output_x = np.expand_dims(signal, axis = 0)
+                    output_detection = np.expand_dims(out_detection, axis=0)
+                    output_classification = np.expand_dims(out_classification, axis=0)
+                    output_type = np.expand_dims(out_type, axis=0)
+                else:
+                    output_x = np.vstack((output_x, np.expand_dims(signal, axis = 0)))
+                    output_detection = np.vstack((output_detection, np.expand_dims(out_detection, axis=0)))
+                    output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
+                    output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
+            
+
+            # =========================================================================================================
+            detected_events = self.exponential.detection(sample)
+
+            last_event = 0
+            valid, total = 0, 0
+            for ev in detected_events:
+                total += 1
+                eventSample = ev[0]
+
+                invalid_event = False
+                for true_event in events_samples: # Check if this event is equivalent to any of the true events
+                    if abs(eventSample - true_event[0]) < 12800:
+                        invalid_event = True
+
+                if invalid_event or abs(eventSample - last_event) < 12800: # If this is an invalid event, goes to the next one
+                    continue
+
+                valid += 1
+                last_event = eventSample
+
+                margin_ratio = 0
+                if "MARGIN_RATIO" in self.configs:
+                    margin_ratio = self.configs["MARGIN_RATIO"]
+
+                initSample = eventSample - randrange(0, self.m_signalBaseLength)
+                out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, -1)
+                signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
+                                initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
+
+                if output_x.size == 0:
+                    output_x = np.expand_dims(signal, axis = 0)
+                    output_detection = np.expand_dims(out_detection, axis=0)
+                    output_classification = np.expand_dims(out_classification, axis=0)
+                    output_type = np.expand_dims(out_type, axis=0)
+                else:
+                    output_x = np.vstack((output_x, np.expand_dims(signal, axis = 0)))
+                    output_detection = np.vstack((output_detection, np.expand_dims(out_detection, axis=0)))
+                    output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
+                    output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
+
+
+            print(f"Found {total} events, but only {valid} is/are valid!")
+            # =========================================================================================================
         
         return output_x, output_detection, output_classification, output_type
     
@@ -161,24 +208,32 @@ class DataHandler:
 
         return dict_train, dict_test
 
-    def generateAcquisitionType(self, trainSize, augmentation=1):
-        # 1: 832
-        # 2: 2688
-        # 3: 3168
-        # 4: 1728
+    def generateAcquisitionType(self, trainSize, distribution=None, augmentation=1):
+        if distribution is None:
+            # 1: 832
+            # 2: 2688
+            # 3: 3168
+            # 4: 1728
+
+            distribution = {
+                "1": 832,
+                "2": 2688,
+                "3": 3168,
+                "8": 1728
+            }
 
         load_type = []
         for k in range(augmentation):
-            for i in range(0, 832):
+            for i in range(0, distribution["1"]):
                 load_type.append(1)
 
-            for i in range(0, 2688, 4):
+            for i in range(0, distribution["2"], 4):
                 load_type.append(1)
                 load_type.append(2)
                 load_type.append(2)
                 load_type.append(1)
             
-            for i in range(0, 3168, 6):
+            for i in range(0, distribution["3"], 6):
                 j = 0
                 while j < 3:
                     j += 1
@@ -188,7 +243,7 @@ class DataHandler:
                     load_type.append(j)
                     j -= 1
 
-            for i in range(0, 1728, 18):
+            for i in range(0, distribution["8"], 18):
                 j = 0
                 while j < 8:
                     j += 1
@@ -204,13 +259,13 @@ class DataHandler:
 
         general = []
         for k in range(augmentation):
-            for i in range(0, 832):
+            for i in range(0, distribution["1"]):
                 general.append(1)
-            for i in range(0, 2688):
+            for i in range(0, distribution["2"]):
                 general.append(2)
-            for i in range(0, 3168):
+            for i in range(0, distribution["3"]):
                 general.append(3)
-            for i in range(0, 1728):
+            for i in range(0, distribution["8"]):
                 general.append(8)
 
         load_type_train, load_type_test, general_qtd_train, general_qtd_test = train_test_split(load_type, general, train_size=trainSize, random_state = 42)

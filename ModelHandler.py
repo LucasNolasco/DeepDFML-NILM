@@ -22,7 +22,7 @@ class ModelHandler:
             exit(-1)
 
     def buildModel(self, type_weights=None):
-        input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio),))
+        input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio), 1))
         x = Conv1D(filters=60, kernel_size=9)(input)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
@@ -58,10 +58,10 @@ class ModelHandler:
         detection_output = Dense(1 * self.m_ngrids, activation='sigmoid')(detection_output)
         detection_output = Reshape((self.m_ngrids, 1), name="detection")(detection_output)
 
-        classification_output = Dense(200)(x)
+        classification_output = Dense(300)(x)
         classification_output = LeakyReLU(alpha = 0.1)(classification_output)
         classification_output = Dropout(0.25)(classification_output)
-        classification_output = Dense(50)(classification_output)
+        classification_output = Dense(300)(classification_output)
         classification_output = LeakyReLU(alpha=0.1)(classification_output)
         classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid')(classification_output)
         classification_output = Reshape((self.m_ngrids, (self.m_nclass)), name = "classification")(classification_output)
