@@ -77,7 +77,7 @@ The trained weights may be download from this [link](https://drive.google.com/dr
 
 ## Dataset Waveforms
 
-The LIT-Dataset is a public dataset and can be download on this [link](http://dainf.ct.utfpr.edu.br/˜douglas/LIT_Dataset/index.html). However, only MATLAB tools are provided. In order to use the dataset with this implementation, an version on *.hdf5 can be downloaded on the following [link](https://drive.google.com/file/d/10NL9S8BYioj1U1_phCEoKX4WWRQoBuYW/view?usp=sharing). The dataset is stored on this file on the following hierarchical structure:
+The LIT-Dataset is a public dataset and can be download on this [link](http://dainf.ct.utfpr.edu.br/~douglas/LIT_Dataset/index.html). However, only MATLAB tools are provided. In order to use the dataset with this implementation, an version on *.hdf5 can be downloaded on the following [link](https://drive.google.com/file/d/10NL9S8BYioj1U1_phCEoKX4WWRQoBuYW/view?usp=sharing). The dataset is stored on this file on the following hierarchical structure:
 
 - `1` -> Total number of loads on each waveform
     - `i` -> Array containing all the samples for each waveform
