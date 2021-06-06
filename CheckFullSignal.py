@@ -31,7 +31,7 @@ class CheckFullSignal:
                 else:
                     title = title + ", " + str(lab)
             
-            title = "Esperado: [" + title + "]\nEncontrado: "
+            title = "ŷ: [" + title + "]\ny: ["
 
             windows = []
             for i in range(self.m_ngrids):
@@ -54,8 +54,8 @@ class CheckFullSignal:
                     for window in windows:
                         #print(ev[0][0], window.initSample, window.initSample + round(SIGNAL_LENGTH / N_GRIDS))
                         if ev[0][0] >= window.initSample and ev[0][0] < window.initSample + round(self.m_signalBaseLength / self.m_ngrids):
-                            if ev[2][0][1] >= 0.5:
-                                window.add(ev)
+                            # if ev[2][0][1] >= 0.5:
+                            window.add(ev)
 
                 for window in windows:
                     window.move()
@@ -78,11 +78,12 @@ class CheckFullSignal:
             # ax.plot(np.arange(0, x.shape[1]), x)
             # ax.plot(np.arange(0, x.shape[1]), ydet)
             # ax.plot(np.arange(0, x.shape[1]), y_res)
+            title = title[:-2] + "]"
 
             plt.title(title)
             plt.plot(np.arange(0, x.shape[0]), x)
-            plt.plot(np.arange(0, x.shape[0]), np.max(x) * 1.5 * ydet, label="Evento real")
-            plt.plot(np.arange(0, x.shape[0]), np.max(x) * y_res, label="Evento encontrado")
-            plt.xlabel("Amostras")
-            plt.ylabel("Corrente")
-            plt.legend(loc="upper right")
+            plt.plot(np.arange(0, x.shape[0]), np.max(x) * 1.5 * ydet, label="Real event")
+            plt.plot(np.arange(0, x.shape[0]), np.max(x) * y_res, label="Detected Event")
+            plt.xlabel("Samples")
+            plt.ylabel("Current [A]")
+            plt.legend(loc="lower left")

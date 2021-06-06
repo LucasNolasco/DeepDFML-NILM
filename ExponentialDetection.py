@@ -1,7 +1,7 @@
 import numpy as np
 
 class ExponentialDetection:
-    def __init__(self, gamma = 0.001, samples_per_cycle=256, n_windows = 4):
+    def __init__(self, gamma = 0.00001, samples_per_cycle=256, n_windows = 1):
         self.gamma = gamma
         self.samples_per_cycle = samples_per_cycle
         self.n_windows = n_windows

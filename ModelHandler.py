@@ -109,9 +109,9 @@ class ModelHandler:
 
     @staticmethod
     def sumSquaredError(y_true, y_pred):
-        #event_exists = tf.math.ceil(y_true)
+        # event_exists = tf.math.ceil(y_true)
 
-        #return K.sum(K.square(y_true - y_pred) * event_exists, axis=-1)
+        # return K.sum(K.square(y_true - y_pred) * event_exists, axis=-1)
         return K.sum(K.square(y_true - y_pred), axis=-1)
 
     @staticmethod

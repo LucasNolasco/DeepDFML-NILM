@@ -154,7 +154,10 @@ class DataHandler:
 
                 invalid_event = False
                 for true_event in events_samples: # Check if this event is equivalent to any of the true events
-                    if abs(eventSample - true_event[0]) < 12800:
+                    if abs(eventSample - true_event[0]) < 12800 or \
+                        eventSample < 12800 + 2 * int(margin_ratio * self.m_signalBaseLength) or \
+                        eventSample > sample.shape[0]  - (12800 + 2 * int(margin_ratio * self.m_signalBaseLength)):
+                        
                         invalid_event = True
 
                 if invalid_event or abs(eventSample - last_event) < 12800: # If this is an invalid event, goes to the next one
@@ -171,6 +174,10 @@ class DataHandler:
                 out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, -1)
                 signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
                                 initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
+
+                if sum(np.max(out_classification, axis=0)) == 0:
+                    valid -= 1
+                    continue
 
                 if output_x.size == 0:
                     output_x = np.expand_dims(signal, axis = 0)
@@ -222,41 +229,6 @@ class DataHandler:
                 "8": 1728
             }
 
-        load_type = []
-        for k in range(augmentation):
-            for i in range(0, distribution["1"]):
-                load_type.append(1)
-
-            for i in range(0, distribution["2"], 4):
-                load_type.append(1)
-                load_type.append(2)
-                load_type.append(2)
-                load_type.append(1)
-            
-            for i in range(0, distribution["3"], 6):
-                j = 0
-                while j < 3:
-                    j += 1
-                    load_type.append(j)
-
-                while j > 0:
-                    load_type.append(j)
-                    j -= 1
-
-            for i in range(0, distribution["8"], 18):
-                j = 0
-                while j < 8:
-                    j += 1
-                    load_type.append(j)
-
-                while j > 1:
-                    load_type.append(j)
-                    j -= 1
-
-                load_type.append(2)
-                load_type.append(2)
-                load_type.append(1)
-
         general = []
         for k in range(augmentation):
             for i in range(0, distribution["1"]):
@@ -268,8 +240,8 @@ class DataHandler:
             for i in range(0, distribution["8"]):
                 general.append(8)
 
-        load_type_train, load_type_test, general_qtd_train, general_qtd_test = train_test_split(load_type, general, train_size=trainSize, random_state = 42)
-        return load_type_train, load_type_test, general_qtd_train, general_qtd_test
+        general_qtd_train, general_qtd_test = train_test_split(general, train_size=trainSize, random_state=42)
+        return general_qtd_train, general_qtd_test
 
     def checkAcquisitionType(self, yclass, load_type, general_qtd):
         correct_order = 0

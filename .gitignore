@@ -13,6 +13,8 @@ attempt_to_reduce_overfitting/
 no_detection/
 tmp/
 
+*.npy
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

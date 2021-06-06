@@ -1,4 +1,10 @@
-# YOLO_NILM
+# DeepDFML-NILM
+
+We propose a new CNN architecture to perform detection, feature extraction, and multi-label classification of loads, in non-intrusive load monitoring (NILM) approaches, with a single model for high-frequency signals. This model follows the idea of YOLO network, which provides the detection and multi-label classification of images. The obtained results are equivalent or superior (in most analyzed cases) to state-of-the-art methods for the evaluated datasets.
+
+## Dependencies
+
+
 
 ## Estrutura dicionário:
 

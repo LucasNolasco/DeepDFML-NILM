@@ -54,7 +54,7 @@ class PostProcessing:
                         events.append(detectedEvent.copy())
                         max_total_probability = total_probability
 
-        return np.array(events)
+        return np.array(events, dtype=object)
 
     def suppressionMultiClass(self, detection, event_type, classification):
         events = []
@@ -173,7 +173,6 @@ class PostProcessing:
                     continue
     
             if len(gt_events) == 0:
-                print(gt_events, pred_events)
                 continue
 
             if gt_events[0][1][0] == 0:
@@ -214,6 +213,9 @@ class PostProcessing:
             if general_acquisition_type is not None and target is not None:
                 if general_acquisition_type[i] != target:
                     continue
+
+            if len(gt_events) == 0:
+                continue
     
             if gt_events[0][1][0] == 0:
                 if len(pred_events) > 0 and gt_events[0][1][0] == pred_events[0][1][0] and abs(gt_events[0][0][0] - pred_events[0][0][0]) < (128 * 10): # 10 semicycles tolerance
@@ -315,13 +317,13 @@ class PostProcessing:
 
         return [final_acc_on, final_no_det_acc_on], [final_acc_off, final_no_det_acc_off], [final_acc, final_acc_no_det], [f1_macro_with_detection, f1_macro_without_detection], [f1_micro_with_detection, f1_micro_without_detection]
     
-    def checkModel(self, model, x, y, load_type=None, general_qtd=None, print_error=True):
+    def checkModel(self, model, x, y, general_qtd=None, print_error=True):
         groundTruth, predicted = self.detectEvents(model, x, y)
 
         PCmetric = []
         Dmetric = []
 
-        if load_type is not None and general_qtd is not None:
+        if general_qtd is not None:
             PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=1))
             PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=2))
             PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=3))
