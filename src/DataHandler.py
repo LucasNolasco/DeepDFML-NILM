@@ -106,7 +106,6 @@ class DataHandler:
         
         return out_detection, out_type, out_classification
 
-    # Pega os dados originais e faz recortes para diminuir o tamanho (Necessário para diminuir o tamanho do modelo)
     def cutData(self, rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR):
         output_x = np.array([])
         output_detection = np.array([])

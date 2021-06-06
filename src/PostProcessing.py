@@ -290,18 +290,6 @@ class PostProcessing:
 
             loads_pred.append(new_pred)
 
-        #print(acc_on)
-        #print(total_on)
-        #print(np.nan_to_num(acc_on/total_on, nan=1))
-        #print(acc_off)
-        #print(total_off)
-        #print(np.nan_to_num(acc_off/total_off, nan=1))
-        #print(acc_on + acc_off)
-        #print(total_on + total_off)
-        #print(np.nan_to_num((acc_on + acc_off)/(total_on + total_off), nan=1))
-        #print(acc_on/total_on)
-        #print(np.average(acc_on/total_on, axis=0))
-
         final_acc_on = np.average(np.nan_to_num(acc_on/total_on, nan=1), axis=0)
         final_acc_off = np.average(np.nan_to_num(acc_off/total_off, nan=1), axis=0)
         final_no_det_acc_on = np.average(np.nan_to_num(no_det_acc_on/total_on, nan=1), axis=0)

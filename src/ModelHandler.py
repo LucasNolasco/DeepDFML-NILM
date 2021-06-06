@@ -1,9 +1,8 @@
 import tensorflow as tf
 from keras import backend as K
-from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax, GlobalAveragePooling1D, Lambda
+from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax
 from keras.models import Model, load_model
 from keras.utils.vis_utils import plot_model
-from kymatio.keras import Scattering1D
 
 class ModelHandler:
     def __init__(self, configs):
@@ -26,28 +25,18 @@ class ModelHandler:
         x = Conv1D(filters=60, kernel_size=9)(input)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
-        #x = BatchNormalization()(x)
-        #x = Dropout(rate=0.25)(x)
         x = Conv1D(filters=40, kernel_size=9)(x)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
-        #x = BatchNormalization()(x)
-        #x = Dropout(rate=0.25)(x)
         x = Conv1D(filters=40, kernel_size=9)(x)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
-        #x = BatchNormalization()(x)
-        #x = Dropout(rate=0.25)(x)
         x = Conv1D(filters=40, kernel_size=9)(x)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
-        #x = BatchNormalization()(x)
-        #x = Dropout(rate=0.25)(x)
         x = Conv1D(filters=40, kernel_size=9)(x)
         x = LeakyReLU(alpha = 0.1)(x)
         x = MaxPooling1D(pool_size=4)(x)
-        #x = BatchNormalization()(x)
-        #x = Dropout(rate=0.25)(x)
         x = Flatten()(x)
 
         detection_output = Dense(200)(x)
@@ -65,7 +54,6 @@ class ModelHandler:
         classification_output = LeakyReLU(alpha=0.1)(classification_output)
         classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid')(classification_output)
         classification_output = Reshape((self.m_ngrids, (self.m_nclass)), name = "classification")(classification_output)
-        #classification_output = Softmax(axis=2, name="classification")(classification_output)
 
         type_output = Dense(10)(x)
         type_output = LeakyReLU(alpha = 0.1)(type_output)
@@ -109,9 +97,6 @@ class ModelHandler:
 
     @staticmethod
     def sumSquaredError(y_true, y_pred):
-        # event_exists = tf.math.ceil(y_true)
-
-        # return K.sum(K.square(y_true - y_pred) * event_exists, axis=-1)
         return K.sum(K.square(y_true - y_pred), axis=-1)
 
     @staticmethod
