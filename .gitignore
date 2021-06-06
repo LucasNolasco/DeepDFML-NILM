@@ -12,6 +12,8 @@ Imagens/
 attempt_to_reduce_overfitting/
 no_detection/
 tmp/
+!TrainedWeights/*/*/*.h5
+!TrainedWeights/*/*/*.p
 
 *.npy
 

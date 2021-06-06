@@ -10,7 +10,7 @@ from ModelHandler import ModelHandler
 TRAIN = 0 # Train using a ten folded k-fold
 TRAIN_NO_KFOLD = 1
 
-EXECUTION_STATE = TRAIN_NO_KFOLD
+EXECUTION_STATE = TRAIN
 
 configs = {
     "N_GRIDS": 5, 
@@ -47,6 +47,7 @@ def main():
         max_abs_scaler = MaxAbsScaler()
         x = max_abs_scaler.fit_transform(x)
         x = np.reshape(x, (x.shape[0], x.shape[1], 1))
+        pickle.dump(max_abs_scaler, open(folderDataPath + "scaper.p", "wb"))
         print(x.shape)
         print("Data scaled")
         x_train, x_test, y_train_detection, y_test_detection, y_train_type, y_test_type, y_train_classification, y_test_classification = train_test_split(x, ydet, ytype, yclass, train_size=trainSize, random_state = 42)
