@@ -4,6 +4,8 @@ We propose a new CNN architecture to perform detection, feature extraction, and 
 
 ![Architecture](.images/architecture.png)
 
+---
+
 ## Dependencies
 
 The model was implemented on Python 3 with the following libraries:
@@ -44,6 +46,8 @@ The model was implemented on Python 3 with the following libraries:
     $ pip3 install matplotlib
     ```
 
+---
+
 ## Dict structure
 
 This implementation uses a dict structure to define some of the execution parameters. The fields of this dict are:
@@ -62,6 +66,39 @@ This implementation uses a dict structure to define some of the execution parame
 * `INITIAL_EPOCH`: Initial epoch to continue a training, only useful if a training will be continued. (default = 0).
 * `TOTAL_MAX_EPOCHS`: Max of training epochs.
 * `SNRdB`: Noise level on dB.
+
+---
+
+## Trained weights
+
+The trained weights may be download from this [link](https://drive.google.com/drive/folders/1KvPN9RN7s3ropOx732MzOedgRNWOZz85?usp=sharing). To use them, just download and place the `TrainedWeights` folder inside the `DeepDFML-NILM` directory.
+
+---
+
+## Dataset Waveforms
+
+The LIT-Dataset is a public dataset and can be download on this [link](http://dainf.ct.utfpr.edu.br/˜douglas/LIT_Dataset/index.html). However, only MATLAB tools are provided. In order to use the dataset with this implementation, an version on *.hdf5 can be downloaded on the following [link](https://drive.google.com/file/d/10NL9S8BYioj1U1_phCEoKX4WWRQoBuYW/view?usp=sharing). The dataset is stored on this file on the following hierarchical structure:
+
+- `1` -> Total number of loads on each waveform
+    - `i` -> Array containing all the samples for each waveform
+    - `events` -> Array containing the events array. Each event array has the same length of the waveform. If a position has a 0, there is no event. If it has a 1, there is an ON event on the sample with the same index and if it has a -1, there is an OFF event.
+    - `labels` -> Array of connected loads. The connected loads for each waveform are represented by an array with the labels of the connected loads in the order of the events. So, if there is only one appliance, the array shall look like: ["A", "A"].
+- `2`
+    - `i`
+    - `events`
+    - `labels`
+- `3`
+    - `i`
+    - `events`
+    - `labels`
+- `8`
+    - `i`
+    - `events`
+    - `labels`
+
+To use this file with this implementation, just download it and place the `Synthetic_Full_iHall.hdf5` file on the `DeepDFML-NILM` directory.
+
+---
 
 ## How to run
 
