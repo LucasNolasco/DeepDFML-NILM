@@ -71,7 +71,7 @@ This implementation uses a dict structure to define some of the execution parame
 
 ## Trained weights
 
-The trained weights may be download from this [link](https://drive.google.com/drive/folders/1KvPN9RN7s3ropOx732MzOedgRNWOZz85?usp=sharing). To use them, just download and place the `TrainedWeights` folder inside the `DeepDFML-NILM` directory.
+The trained weights may be download from this [link](https://drive.google.com/file/d/1AgRo1DXWQtZoHMlut6dYL3UIDESao5lh/view?usp=sharing). To use them, just download and place the `TrainedWeights` folder inside the `DeepDFML-NILM` directory.
 
 ---
 
