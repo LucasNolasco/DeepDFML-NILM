@@ -103,6 +103,56 @@ class PostProcessing:
         return np.array(events, dtype=object)
 
     # --------------------------------------------------------------------
+    #   detectAll: Method responsible for converting the model output
+    #                 to an event list, where each event is a list on the
+    #                 following format:
+    #                       [[eventSample, probability (for now it's always 1)],
+    #                        [eventType, probability],
+    #                        [[connectedLoad, probability]]]
+    #
+    #   Parameters: 
+    #       - model: Structure of the trained model
+    #       - x_test: Input data for each example
+    #       - y_test: Expected output for each input (ground truth)
+    #
+    #   Return:
+    #       - groundTruth_detection: list with ground truth events
+    #       - predicted_detection: list with predicted events
+    #       - predicted_classification: list with classification output
+    #       - total_time: total time (in secods) to process all the input signal cuts 
+    # --------------------------------------------------------------------
+    def detectAll(self, model, x_test, y_test, multilabel=True):
+        total_time = 0
+        groundTruth, predicted = [], []
+        predicted_classification = []
+        for xi, groundTruth_detection, groundTruth_type, groundTruth_classification in zip(x_test, y_test["detection"], y_test["type"], y_test["classification"]):
+            init_time = timeit.default_timer()
+            result = model.predict(np.expand_dims(xi, axis = 0))
+
+            raw_detection, raw_type, raw_classification = self.processResult(result[0][0], result[1][0], result[2][0])
+            raw_gt_detection, raw_gt_type, raw_gt_classification = self.processResult(groundTruth_detection, groundTruth_type, groundTruth_classification)
+
+            if multilabel:
+                predict_events = self.suppression(raw_detection, raw_type, raw_classification)
+                groundTruth_events = self.suppression(raw_gt_detection, raw_gt_type, raw_gt_classification)
+            else:
+                predict_events = self.suppressionMultiClass(raw_detection, raw_type, raw_classification)
+                groundTruth_events = self.suppressionMultiClass(raw_gt_detection, raw_gt_type, raw_gt_classification)
+
+            final_time = timeit.default_timer()
+
+            total_time += final_time - init_time
+
+            predicted.append(predict_events)
+            groundTruth.append(groundTruth_events)
+
+            predicted_classification.append(result[2][0])
+
+        # print("Total time: {0}, Average Time: {1}".format(total_time, total_time/x_test.shape[0]))
+
+        return np.array(groundTruth), np.array(predicted), np.array(predicted_classification), total_time
+
+    # --------------------------------------------------------------------
     #   detectEvents: Method responsible for converting the model output
     #                 to an event list, where each event is a list on the
     #                 following format:
@@ -305,6 +355,60 @@ class PostProcessing:
 
         return [final_acc_on, final_no_det_acc_on], [final_acc_off, final_no_det_acc_off], [final_acc, final_acc_no_det], [f1_macro_with_detection, f1_macro_without_detection], [f1_micro_with_detection, f1_micro_without_detection]
     
+    def checkModelAll(self, model, x, y, general_qtd=None, print_error=True):
+        groundTruth, predicted, y_pred, total_time = self.detectAll(model, x, y)
+
+        PCmetric = []
+        Dmetric = []
+
+        print("++++++++++++++ DETECTION ++++++++++++++")
+
+        if general_qtd is not None:
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=1))
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=2))
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=3))
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd, target=8))
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd))
+
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd, target=1))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd, target=2))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd, target=3))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd, target=8))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd))
+
+            print("LIT-SYN-1 PCmetric: {0}".format(PCmetric[0]))
+            print("LIT-SYN-1 Dmetric: {0}".format(Dmetric[0]))
+
+            print("LIT-SYN-2 PCmetric: {0}".format(PCmetric[1]))
+            print("LIT-SYN-2 Dmetric: {0}".format(Dmetric[1]))
+
+            print("LIT-SYN-3 PCmetric: {0}".format(PCmetric[2]))
+            print("LIT-SYN-3 Dmetric: {0}".format(Dmetric[2]))
+
+            print("LIT-SYN-8 PCmetric: {0}".format(PCmetric[3]))
+            print("LIT-SYN-8 Dmetric: {0}".format(Dmetric[3]))
+
+            print("LIT-SYN-All PCmetric: {0}".format(PCmetric[4]))
+            print("LIT-SYN-All Dmetric: {0}".format(Dmetric[4]))
+        
+        else:
+            PCmetric.append(self.PCMetric(groundTruth, predicted, general_qtd))
+            Dmetric.append(self.averageDistanceMetric(groundTruth, predicted, general_qtd))
+
+            print("LIT-SYN-All PCmetric: {0}".format(PCmetric[-1]))
+            print("LIT-SYN-All Dmetric: {0}".format(Dmetric[-1]))
+
+        print("++++++++++++++ CLASSIFICATION ++++++++++++++")
+
+        y_gt = y["classification"]
+        classification_f1 = 100 * f1_score(np.max(y_pred, axis=1) > 0.5, np.max(y_gt, axis=1) > 0.5, average='macro')
+        print(f"F1 Score: {classification_f1:.2f}%")
+
+        print("++++++++++++++ TIME PERFORMANCE ++++++++++++++")
+        print("Total time: {0}, Average Time: {1}".format(total_time, total_time/x.shape[0]))
+
+        return PCmetric, Dmetric, classification_f1, total_time
+
     def checkModel(self, model, x, y, general_qtd=None, print_error=True):
         groundTruth, predicted = self.detectEvents(model, x, y)
 

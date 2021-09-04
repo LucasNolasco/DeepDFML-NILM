@@ -110,3 +110,7 @@ $ python3 main.py
 ```
 
 Also, on the folder `notebooks` there are a few notebooks for evaluation of the models and some visualization tests.
+
+## Tests on Jetson TX1
+
+The tests on Jetson TX1 are detailed on this [tutorial](EmbeddedSystem.md).
