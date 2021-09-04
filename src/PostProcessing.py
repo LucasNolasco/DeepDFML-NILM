@@ -46,14 +46,14 @@ class PostProcessing:
 
         if len(events) > 1:
             max_total_probability = 0
-            eventsCopy = events.copy()
+            eventsCopy = [i for i in events]
             events = []
             for detectedEvent in eventsCopy:
                 if len(detectedEvent[2]) > 0:
                     total_probability = np.sum(detectedEvent[2],axis=0)[1]
                     if total_probability > max_total_probability:
                         events = []
-                        events.append(detectedEvent.copy())
+                        events.append(detectedEvent)
                         max_total_probability = total_probability
 
         return np.array(events, dtype=object)

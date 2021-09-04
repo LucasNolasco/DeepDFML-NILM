@@ -22,7 +22,7 @@ class ModelHandler:
             print("Erro no dicionário de configurações")
             exit(-1)
 
-    def buildModel(self, type_weights=None):
+    def buildModel(self, old_sse=False, type_weights=None):
         input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio), 1))
         x = Conv1D(filters=60, kernel_size=9)(input)
         x = LeakyReLU(alpha = 0.1)(x)
@@ -68,7 +68,10 @@ class ModelHandler:
         if type_weights is not None:
             model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, ModelHandler.weighted_categorical_crossentropy(type_weights), "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
         else:
-            model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
+            if old_sse:
+                model.compile(optimizer='adam', loss = [ModelHandler.oldSumSquaredError, "categorical_crossentropy", "binary_crossentropy"])
+            else:
+                model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
 
         return model
 
@@ -102,7 +105,10 @@ class ModelHandler:
         event_exists = tf.math.ceil(y_true)
 
         return K.sum(K.square(y_true - y_pred) * event_exists, axis=-1)
-        # return K.sum(K.square(y_true - y_pred), axis=-1)
+        
+    @staticmethod
+    def oldSumSquaredError(y_true, y_pred):
+        return K.sum(K.square(y_true - y_pred), axis=-1)
 
     @staticmethod
     def weighted_categorical_crossentropy(weights):

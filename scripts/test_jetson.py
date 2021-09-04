@@ -49,7 +49,7 @@ group_distribution = {
 
 general_qtd_test = np.load(folderDataPath + "general_test_qtd.npy")
 
-bestModel = modelHandler.buildModel()
+bestModel = modelHandler.buildModel(old_sse=True)
 bestModel.load_weights(folderPath + "best_model.h5")
 
 print("Loaded Data")
