@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import h5py
 import numpy as np
 from random import randrange
@@ -190,7 +192,7 @@ class DataHandler:
                     output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
 
 
-            print(f"Found {total} events, but only {valid} is/are valid!")
+            print("Found %d events, but only %d is/are valid!" % (total, valid))
             # =========================================================================================================
         
         return output_x, output_detection, output_classification, output_type
