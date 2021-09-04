@@ -26,7 +26,7 @@ trainSize = configs["TRAIN_SIZE"]
 ngrids = configs["N_GRIDS"]
 
 print("Loading data")
-dict_data = pickle.load(folderDataPath + open("sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "rb")) # Load data
+dict_data = pickle.load(open(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "rb")) # Load data
 
 print("Storing using the new protocol (version 2)")
-pickle.dump(dict_data, open(folderDataPath + "sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "wb"), protocol=2)
+pickle.dump(dict_data, open("sorted_aug_data_" + str(ngrids) + "_" + str(signalBaseLength) + ".p", "wb"), protocol=2)

@@ -97,7 +97,7 @@ for i, subset in enumerate(["1", "2", "3", "8", "All"]):
     print("Average, LIT-SYN-%s, DMetric - On: %.1f, Off: %.1f, Total: %.1f" % (subset, avgDMetric[i][0], avgDMetric[i][1], avgDMetric[i][2]))
 
 print("++++++++++++++ CLASSIFICATION ++++++++++++++")
-print("F1 Score: %.2f\%" % (np.average(f1)))
+print("F1 Score: %.2f" % (np.average(f1)))
 
 print("++++++++++++++ TIME PERFORMANCE ++++++++++++++")
 print("Total time: %g, Average Time: %g" % (total_time, total_time/X_all.shape[0]))
