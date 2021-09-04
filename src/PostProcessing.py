@@ -404,7 +404,7 @@ class PostProcessing:
 
         y_gt = y["classification"]
         classification_f1 = 100 * f1_score(np.max(y_pred, axis=1) > 0.5, np.max(y_gt, axis=1) > 0.5, average='macro')
-        print("F1 Score: %.2f\%" % (classification_f1))
+        print("F1 Score: %.2f" % (classification_f1))
 
         print("++++++++++++++ TIME PERFORMANCE ++++++++++++++")
         print("Total time: {0}, Average Time: {1}".format(total_time, total_time/x.shape[0]))

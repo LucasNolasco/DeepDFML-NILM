@@ -52,7 +52,7 @@ Tested with the following package versions:
 
 2. Downloading the weights
 
-    The weights might be download directly from the following [url](https://drive.google.com/file/d/1AgRo1DXWQtZoHMlut6dYL3UIDESao5lh/view) on a browser. Another easy option is using the `gdown` program. First of all, it's necessary to install it:
+    The weights might be download directly from the following [url](https://drive.google.com/file/d/1Q0A9SlSFnNwwDNkvufdKw3ONX_45-UPo/view) on a browser. Another easy option is using the `gdown` program. First of all, it's necessary to install it:
 
     ```
     $ pip3 install gdown
@@ -61,7 +61,7 @@ Tested with the following package versions:
     After the instalation, just run the following command to download the weights:
 
     ```
-    $ gdown https://drive.google.com/uc\?id\=1AgRo1DXWQtZoHMlut6dYL3UIDESao5lh\&export\=download
+    $ gdown https://drive.google.com/u/0/uc\?id\=1Q0A9SlSFnNwwDNkvufdKw3ONX_45-UPo\&export\=download  
     ``` 
 
     This will create a new file named `TrainedWeights.zip` on the current directory. The final step is to unzip this new file:
@@ -78,5 +78,5 @@ Tested with the following package versions:
 
     ```
     $ cd script
-    $ python test.py
+    $ python test_jetson.py
     ```
