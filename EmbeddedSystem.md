@@ -74,9 +74,13 @@ Tested with the following package versions:
 
 3. Running the test
 
+    To maximize the board performance, these tests assume that the [jetson_clocks](https://developer.ridgerun.com/wiki/index.php?title=Xavier/JetPack_4.1/Performance_Tuning/Maximizing_Performance#Jetson_Clocks) script is running.
+
     Inside the repository folder (`DeepDFML-NILM`), enter the script folder and run the test script. All the code on this repository is designed for Python3, but the tensorflow is compiled for Python2, so this code must be executed using Python2 on Jetson. To run it:
 
     ```
     $ cd script
     $ python test_jetson.py
     ```
+
+    In order to check the board resource consumption, the package [jetson-stats](https://github.com/rbonghi/jetson_stats) was employed. Install instructions and usage examples are found on [its GitHub repository](https://github.com/rbonghi/jetson_stats).
