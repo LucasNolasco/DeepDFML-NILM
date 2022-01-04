@@ -1,6 +1,6 @@
 # DeepDFML-NILM
 
-We propose a new CNN architecture to perform detection, feature extraction, and multi-label classification of loads, in non-intrusive load monitoring (NILM) approaches, with a single model for high-frequency signals. This model follows the idea of YOLO network, which provides the detection and multi-label classification of images. The obtained results are equivalent or superior (in most analyzed cases) to state-of-the-art methods for the evaluated datasets.
+This repository is the official implementation of the paper [DeepDFML-NILM: A New CNN-Based Architecture for Detection, Feature Extraction and Multi-Label Classification in NILM Signals](https://ieeexplore.ieee.org/abstract/document/9611234). On this work, we propose a new CNN architecture to perform detection, feature extraction, and multi-label classification of loads, in non-intrusive load monitoring (NILM) approaches, with a single model for high-frequency signals. This model follows the idea of YOLO network, which provides the detection and multi-label classification of images. The obtained results are equivalent or superior (in most analyzed cases) to state-of-the-art methods for the evaluated datasets.
 
 ![Architecture](.images/architecture.png)
 
@@ -114,3 +114,21 @@ Also, on the folder `notebooks` there are a few notebooks for evaluation of the 
 ## Tests on Jetson TX1
 
 The tests on Jetson TX1 are detailed on this [tutorial](EmbeddedSystem.md).
+
+---
+
+## Cite
+
+If this work helped you somehow, here is a way to cite it:
+
+```
+@ARTICLE{Nolasco2022,
+  author={Nolasco, Lucas da Silva and Lazzaretti, André Eugenio and Mulinari, Bruna Machado},
+  journal={IEEE Sensors Journal}, 
+  title={DeepDFML-NILM: A New CNN-Based Architecture for Detection, Feature Extraction and Multi-Label Classification in NILM Signals}, 
+  year={2022},
+  volume={22},
+  number={1},
+  pages={501-509},
+  doi={10.1109/JSEN.2021.3127322}}
+```
