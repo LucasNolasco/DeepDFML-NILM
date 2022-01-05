@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-
 import tensorflow as tf
 from keras import backend as K
-from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax
+from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax, GlobalAveragePooling1D, Lambda
 from keras.models import Model, load_model
 from keras.utils.vis_utils import plot_model
 
@@ -22,7 +20,7 @@ class ModelHandler:
             print("Erro no dicionário de configurações")
             exit(-1)
 
-    def buildModel(self, old_sse=False, type_weights=None):
+    def buildModel(self, type_weights=None):
         input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio), 1))
         x = Conv1D(filters=60, kernel_size=9)(input)
         x = LeakyReLU(alpha = 0.1)(x)
@@ -49,12 +47,12 @@ class ModelHandler:
         detection_output = Dense(1 * self.m_ngrids, activation='sigmoid')(detection_output)
         detection_output = Reshape((self.m_ngrids, 1), name="detection")(detection_output)
 
-        classification_output = Dense(300)(x)
-        classification_output = LeakyReLU(alpha = 0.1)(classification_output)
-        classification_output = Dropout(0.25)(classification_output)
-        classification_output = Dense(300)(classification_output)
-        classification_output = LeakyReLU(alpha=0.1)(classification_output)
-        classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid')(classification_output)
+        classification_output = Dense(300, name='classification_dense_0')(x)
+        classification_output = LeakyReLU(alpha = 0.1, name='classification_leaky_0')(classification_output)
+        classification_output = Dropout(0.25, name='classification_dropout')(classification_output)
+        classification_output = Dense(300, name='classification_dense_1')(classification_output)
+        classification_output = LeakyReLU(alpha=0.1, name='classification_leaky_1')(classification_output)
+        classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid', name='classification_dense_2')(classification_output)
         classification_output = Reshape((self.m_ngrids, (self.m_nclass)), name = "classification")(classification_output)
 
         type_output = Dense(10)(x)
@@ -68,19 +66,15 @@ class ModelHandler:
         if type_weights is not None:
             model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, ModelHandler.weighted_categorical_crossentropy(type_weights), "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
         else:
-            if old_sse:
-                model.compile(optimizer='adam', loss = [ModelHandler.oldSumSquaredError, "categorical_crossentropy", "binary_crossentropy"])
-            else:
-                model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
+            model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
 
         return model
 
     @staticmethod
     def loadModel(path, type_weights={}):
         return load_model(path, custom_objects={'sumSquaredError': ModelHandler.sumSquaredError,\
-                                                'KerasFocalLoss': ModelHandler.KerasFocalLoss,\
-                                                'loss': ModelHandler.weighted_categorical_crossentropy(type_weights)})
-
+                                                'loss': ModelHandler.weighted_categorical_crossentropy(type_weights),\
+                                                'bce_weighted_loss': ModelHandler.get_bce_weighted_loss(None)})
     
     def plotModel(self, model, pathToDirectory):
         if pathToDirectory[-1] != "/":
@@ -101,14 +95,16 @@ class ModelHandler:
         return K.mean(K.sum(loss, axis=1))
 
     @staticmethod
+    def get_bce_weighted_loss(weights):
+        def bce_weighted_loss(y_true, y_pred):
+            return K.mean((weights[:,0]**(1-y_true))*(weights[:,1]**(y_true))*K.binary_crossentropy(y_true, y_pred), axis=-1)
+        return bce_weighted_loss
+
+    @staticmethod
     def sumSquaredError(y_true, y_pred):
         event_exists = tf.math.ceil(y_true)
 
         return K.sum(K.square(y_true - y_pred) * event_exists, axis=-1)
-        
-    @staticmethod
-    def oldSumSquaredError(y_true, y_pred):
-        return K.sum(K.square(y_true - y_pred), axis=-1)
 
     @staticmethod
     def weighted_categorical_crossentropy(weights):
@@ -149,19 +145,4 @@ class ModelHandler:
             loss = -K.sum(loss, -1)
             return loss
     
-        return loss
-
-    @staticmethod
-    def w_categorical_crossentropy(weights):
-        def loss(y_true, y_pred):
-            from itertools import product
-            nb_cl = len(weights)
-            final_mask = K.zeros_like(y_pred[:, 0])
-            y_pred_max = K.max(y_pred, axis=1, keepdims=True)
-            y_pred_max_mat = K.equal(y_pred, y_pred_max)
-            for c_p, c_t in product(range(nb_cl), range(nb_cl)):
-                final_mask += (weights[c_t, c_p] * y_pred_max_mat[:, c_p] * y_true[:, c_t])
-        
-            return K.categorical_crossentropy(y_pred, y_true) * final_mask
-        
         return loss

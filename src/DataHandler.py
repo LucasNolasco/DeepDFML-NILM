@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import h5py
 import numpy as np
-from random import randrange
 from sklearn.model_selection import train_test_split
 from SignalProcessing import SignalProcessing
 from ExponentialDetection import ExponentialDetection
 from tqdm import tqdm
+import random
 
 class DataHandler:
     def __init__(self, configs):
@@ -31,9 +29,12 @@ class DataHandler:
         ydet = np.array([])
         yclass = np.array([])
         ytype = np.array([])
+        ygroup = np.array([])
         
         if loads_list is None:
             loads_list = arq.keys()
+
+        random.seed(0) # Set seed for random offsets generation
 
         for load_qtd in loads_list:
             print("Loading %s" % (load_qtd))
@@ -44,20 +45,24 @@ class DataHandler:
             comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR)
             print(comb_x.shape)
 
+            comb_ygroup = np.ones((comb_x.shape[0],), np.int32) * int(load_qtd) # LIT-SYN group for each example (1, 2, 3 or 8)
+
             if 0 == x.size:
                 x = np.copy(comb_x)
                 ydet = np.copy(comb_ydet)
                 yclass = np.copy(comb_yclass)
                 ytype = np.copy(comb_ytype)
+                ygroup = np.copy(comb_ygroup)
             else:
                 x = np.vstack((x, comb_x))
                 ydet = np.vstack((ydet, comb_ydet))
                 yclass = np.vstack((yclass, comb_yclass))
                 ytype = np.vstack((ytype, comb_ytype))
+                ygroup = np.concatenate((ygroup, comb_ygroup), axis=0)
 
         arq.close()
 
-        return x, ydet, yclass, ytype
+        return x, ydet, yclass, ytype, ygroup
     
     def calcEventsDuration(self, event, label):
         events_samples = np.argwhere(event != 0)
@@ -117,6 +122,8 @@ class DataHandler:
         for sample, event, label in tqdm(zip(rawSamples, rawEvents, rawLabels)):
             events_samples, events_duration = self.calcEventsDuration(event, label)
 
+            detected_events = self.exponential.detection(sample)
+
             if SNR is not None: # Adiciona ruído ao sinal
                 sample = SignalProcessing.awgn(sample, SNR)
 
@@ -127,7 +134,7 @@ class DataHandler:
                 if "MARGIN_RATIO" in self.configs:
                     margin_ratio = self.configs["MARGIN_RATIO"]
 
-                initSample = eventSample - randrange(0, self.m_signalBaseLength)
+                initSample = eventSample - random.randrange(0, self.m_signalBaseLength)
                 out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, eventSample)
                 signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
                                 initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
@@ -143,9 +150,7 @@ class DataHandler:
                     output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
                     output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
             
-
             # =========================================================================================================
-            detected_events = self.exponential.detection(sample)
 
             last_event = 0
             valid, total = 0, 0
@@ -171,7 +176,7 @@ class DataHandler:
                 if "MARGIN_RATIO" in self.configs:
                     margin_ratio = self.configs["MARGIN_RATIO"]
 
-                initSample = eventSample - randrange(0, self.m_signalBaseLength)
+                initSample = eventSample - random.randrange(0, self.m_signalBaseLength)
                 out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, -1)
                 signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
                                 initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
@@ -192,7 +197,7 @@ class DataHandler:
                     output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
 
 
-            print("Found %d events, but only %d is/are valid!" % (total, valid))
+            print(f"Found {total} events, but only {valid} is/are valid!")
             # =========================================================================================================
         
         return output_x, output_detection, output_classification, output_type
@@ -230,6 +235,41 @@ class DataHandler:
                 "8": 1728
             }
 
+        load_type = []
+        for k in range(augmentation):
+            for i in range(0, distribution["1"]):
+                load_type.append(1)
+
+            for i in range(0, distribution["2"], 4):
+                load_type.append(1)
+                load_type.append(2)
+                load_type.append(2)
+                load_type.append(1)
+            
+            for i in range(0, distribution["3"], 6):
+                j = 0
+                while j < 3:
+                    j += 1
+                    load_type.append(j)
+
+                while j > 0:
+                    load_type.append(j)
+                    j -= 1
+
+            for i in range(0, distribution["8"], 18):
+                j = 0
+                while j < 8:
+                    j += 1
+                    load_type.append(j)
+
+                while j > 1:
+                    load_type.append(j)
+                    j -= 1
+
+                load_type.append(2)
+                load_type.append(2)
+                load_type.append(1)
+
         general = []
         for k in range(augmentation):
             for i in range(0, distribution["1"]):
@@ -241,8 +281,8 @@ class DataHandler:
             for i in range(0, distribution["8"]):
                 general.append(8)
 
-        general_qtd_train, general_qtd_test = train_test_split(general, train_size=trainSize, random_state=42)
-        return general_qtd_train, general_qtd_test
+        load_type_train, load_type_test, general_qtd_train, general_qtd_test = train_test_split(load_type, general, train_size=trainSize, random_state = 42)
+        return load_type_train, load_type_test, general_qtd_train, general_qtd_test
 
     def checkAcquisitionType(self, yclass, load_type, general_qtd):
         correct_order = 0
