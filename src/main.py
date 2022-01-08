@@ -4,6 +4,10 @@ from tensorflow.keras.optimizers import Adam
 import numpy as np
 import os
 import pickle
+
+import sys
+
+sys.path.append("../src")
 from DataHandler import DataHandler
 from ModelHandler import ModelHandler
 from PostProcessing import PostProcessing
