@@ -26,9 +26,9 @@ configs = {
     "SNRdb": None # Noise level on db
 }
 
-def freeze(model):
+def freeze(model, task_name='classification'):
     for layer in model.layers:
-        if 'classification' in layer.name:
+        if task_name in layer.name:
             layer.trainable = True
         else:
             layer.trainable = False
@@ -46,7 +46,7 @@ def calculating_class_weights(y_true):
     number_dim = np.shape(y_true)[1]
     weights = np.empty([number_dim, 2])
     for i in range(number_dim):
-        weights[i] = compute_class_weight('balanced', [0.,1.], y_true[:, i])
+        weights[i] = compute_class_weight(class_weight='balanced', classes=[0.,1.], y=y_true[:, i])
     return weights
 
 ngrids = configs["N_GRIDS"]
@@ -110,7 +110,15 @@ X_all = dict_data["x_train"]
 ydet_all = dict_data["y_train"]["detection"]
 ytype_all = dict_data["y_train"]["type"]
 yclass_all = dict_data["y_train"]["classification"]
- 
+
+if not os.path.isfile(configs["FOLDER_PATH"] + 'scattering_model.h5'):
+    scattering_extract = modelHandler.buildBaseScattering()
+    scattering_extract.save(configs["FOLDER_PATH"] + 'scattering_model.h5')
+else:
+    scattering_extract = modelHandler.loadModel(configs["FOLDER_PATH"] + 'scattering_model.h5')
+
+scattering_extract.summary()
+
 fold = 0
 mskf = MultilabelStratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 strat_classes = np.max(yclass_all, axis=1)
@@ -126,6 +134,9 @@ for train_index, validation_index in mskf.split(X_all, strat_classes):
     x_train = np.expand_dims(scaler.transform(np.squeeze(X_all[train_index], axis=2)), axis=2)
     x_validation = np.expand_dims(scaler.transform(np.squeeze(X_all[validation_index], axis=2)), axis=2)
     
+    x_train = scattering_extract.predict(x_train)
+    x_validation = scattering_extract.predict(x_validation)
+
     y_train, y_validation = {}, {}
     y_train["detection"] = ydet_all[train_index]
     y_validation["detection"] = ydet_all[validation_index]
@@ -155,7 +166,7 @@ for train_index, validation_index in mskf.split(X_all, strat_classes):
     if configs["INITIAL_EPOCH"] > 0:
         model = ModelHandler.loadModel(folderPath + 'model_{0}.h5'.format(configs["INITIAL_EPOCH"]))
     else:
-        model = modelHandler.buildModel()
+        model = modelHandler.buildScatteringOutput(input_shape=x_train.shape[1])
  
     model.summary()
  

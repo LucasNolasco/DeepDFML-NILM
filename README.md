@@ -33,18 +33,26 @@ The model was implemented on Python 3 with the following libraries:
 
 - keras:
     ```
-    $ pip3 install keras
+    $ pip3 install keras==2.4.0
     ```
 
 - tensorflow:
     ```
-    $ pip3 install tensorflow
+    $ pip3 install tensorflow==2.4.0
     ```
 
 - matplotlib:
     ```
     $ pip3 install matplotlib
     ```
+
+### Requirements file
+
+An easier way to install all the dependencies is using the requirements file. To install them:
+
+```
+pip3 install -r requirements.txt
+```
 
 ---
 

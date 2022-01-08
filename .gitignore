@@ -13,6 +13,7 @@ attempt_to_reduce_overfitting/
 no_detection/
 tmp/
 TrainedWeights
+nilm_venv/
 
 *.npy
 

@@ -197,7 +197,7 @@ class DataHandler:
                     output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
 
 
-            print(f"Found {total} events, but only {valid} is/are valid!")
+            # print(f"Found {total} events, but only {valid} is/are valid!")
             # =========================================================================================================
         
         return output_x, output_detection, output_classification, output_type

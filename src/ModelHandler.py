@@ -3,6 +3,7 @@ from keras import backend as K
 from keras.layers import Input, Conv1D, LeakyReLU, MaxPooling1D, Dropout, Dense, Reshape, Flatten, Softmax, GlobalAveragePooling1D, Lambda
 from keras.models import Model, load_model
 from keras.utils.vis_utils import plot_model
+from kymatio.keras import Scattering1D
 
 class ModelHandler:
     def __init__(self, configs):
@@ -67,6 +68,67 @@ class ModelHandler:
             model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, ModelHandler.weighted_categorical_crossentropy(type_weights), "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
         else:
             model.compile(optimizer='adam', loss = [ModelHandler.sumSquaredError, "categorical_crossentropy", "binary_crossentropy"], metrics=[['mean_squared_error'], ['categorical_accuracy'], ['binary_accuracy']])
+
+        return model
+
+    def buildBaseScattering(self):
+        '''
+            Source: https://github.com/kymatio/kymatio/blob/master/examples/1d/classif_keras.py
+        '''
+        log_eps = 1e-6
+
+        input = Input(shape=(self.m_signalBaseLength + 2 * int(self.m_signalBaseLength * self.m_marginRatio),))
+        x = Scattering1D(10, 14)(input) # Changed J from 8 to 10 -> Results in a flatten with 544 parameters (the original with convolutions has 520)
+        ###############################################################################
+        # Since it does not carry useful information, we remove the zeroth-order
+        # scattering coefficients, which are always placed in the first channel of
+        # the scattering transform.
+
+        x = Lambda(lambda x: x[..., 1:, :])(x)
+
+        # To increase discriminability, we take the logarithm of the scattering
+        # coefficients (after adding a small constant to make sure nothing blows up
+        # when scattering coefficients are close to zero). This is known as the
+        # log-scattering transform.
+
+        x = Lambda(lambda x: tf.math.log(tf.abs(x) + log_eps))(x)
+
+        ###############################################################################
+        # We then average along the last dimension (time) to get a time-shift
+        # invariant representation.
+
+        x = GlobalAveragePooling1D(data_format='channels_first')(x)
+
+        model = Model(inputs = input, outputs=x)
+
+        return model
+
+    def buildScatteringOutput(self, input_shape):
+        input = Input(shape=input_shape)
+
+        detection_output = Dense(200, name='detection_dense_0')(input)
+        detection_output = LeakyReLU(alpha = 0.1, name='detection_leaky_0')(detection_output)
+        detection_output = Dropout(0.25, name='detection_dropout')(detection_output)
+        detection_output = Dense(20, name='detection_dense_1')(detection_output)
+        detection_output = LeakyReLU(alpha = 0.1, name='detection_leaky_1')(detection_output)
+        detection_output = Dense(1 * self.m_ngrids, activation='sigmoid', name='detection_dense_2')(detection_output)
+        detection_output = Reshape((self.m_ngrids, 1), name="detection")(detection_output)
+
+        classification_output = Dense(300, name='classification_dense_0')(input)
+        classification_output = LeakyReLU(alpha = 0.1, name='classification_leaky_0')(classification_output)
+        classification_output = Dropout(0.25, name='classification_dropout')(classification_output)
+        classification_output = Dense(300, name='classification_dense_1')(classification_output)
+        classification_output = LeakyReLU(alpha=0.1, name='classification_leaky_1')(classification_output)
+        classification_output = Dense((self.m_nclass) * self.m_ngrids, activation = 'sigmoid', name='classification_dense_2')(classification_output)
+        classification_output = Reshape((self.m_ngrids, (self.m_nclass)), name = "classification")(classification_output)
+
+        type_output = Dense(10, name='type_dense_0')(input)
+        type_output = LeakyReLU(alpha = 0.1, name='type_leaky_0')(type_output)
+        type_output = Dense(3 * self.m_ngrids, name='type_dense_1')(type_output)
+        type_output = Reshape((self.m_ngrids, 3), name='type_reshape')(type_output)
+        type_output = Softmax(axis=2, name="type")(type_output)
+        
+        model = Model(inputs = input, outputs=[detection_output, type_output, classification_output])
 
         return model
 
