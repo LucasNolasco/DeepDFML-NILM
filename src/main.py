@@ -18,7 +18,7 @@ configs = {
     "SIGNAL_BASE_LENGTH": 12800, 
     "N_CLASS": 26, 
     "USE_NO_LOAD": False, 
-    "AUGMENTATION_RATIO": 1, 
+    "USE_HAND_AUGMENTATION": False,
     "MARGIN_RATIO": 0.15, 
     "DATASET_PATH": "drive/MyDrive/YOLO_NILM/Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.9,
@@ -63,7 +63,7 @@ dataHandler = DataHandler(configs)
 # Se não tiver os dados no formato necessário já organizados, faz a organização
 if not os.path.isfile(folderDataPath + "data.p"):
     print("Sorted data not found, creating new file...")
-    x, ydet, yclass, ytype, ygroup = dataHandler.loadData(SNR=configs["SNRdb"])
+    x, ydet, yclass, ytype, ygroup = dataHandler.loadData(hand_augmentation=configs["USE_HAND_AUGMENTATION"], SNR=configs["SNRdb"])
     print("Data loaded")
 
     data_mskf = MultilabelStratifiedKFold(n_splits=10, shuffle=True, random_state=42)

@@ -22,7 +22,7 @@ class DataHandler:
             print("Erro no dicionário de configurações")
             exit(-1)
 
-    def loadData(self, loads_list=None, augmentation_ratio=1, SNR=None):
+    def loadData(self, loads_list=None, hand_augmentation=True, SNR=None):
         arq = h5py.File(self.m_datasetPath, "r")
 
         x = np.array([])
@@ -42,7 +42,7 @@ class DataHandler:
             rawEvents = arq[load_qtd]["events"]    
             rawLabels = arq[load_qtd]["labels"]                 
 
-            comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR)
+            comb_x, comb_ydet, comb_yclass, comb_ytype = self.cutData(rawSamples, rawEvents, rawLabels, hand_augmentation, SNR=SNR)
             print(comb_x.shape)
 
             comb_ygroup = np.ones((comb_x.shape[0],), np.int32) * int(load_qtd) # LIT-SYN group for each example (1, 2, 3 or 8)
@@ -113,7 +113,7 @@ class DataHandler:
         
         return out_detection, out_type, out_classification
 
-    def cutData(self, rawSamples, rawEvents, rawLabels, augmentation_ratio, SNR):
+    def cutData(self, rawSamples, rawEvents, rawLabels, hand_augmentation, SNR):
         output_x = np.array([])
         output_detection = np.array([])
         output_classification = np.array([])
@@ -122,7 +122,8 @@ class DataHandler:
         for sample, event, label in tqdm(zip(rawSamples, rawEvents, rawLabels)):
             events_samples, events_duration = self.calcEventsDuration(event, label)
 
-            detected_events = self.exponential.detection(sample)
+            if hand_augmentation:
+                detected_events = self.exponential.detection(sample)
 
             if SNR is not None: # Adiciona ruído ao sinal
                 sample = SignalProcessing.awgn(sample, SNR)
@@ -151,53 +152,55 @@ class DataHandler:
                     output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
             
             # =========================================================================================================
+            
+            if hand_augmentation:
+                last_event = 0
+                valid, total = 0, 0
+                for ev in detected_events:
+                    total += 1
+                    eventSample = ev[0]
 
-            last_event = 0
-            valid, total = 0, 0
-            for ev in detected_events:
-                total += 1
-                eventSample = ev[0]
+                    invalid_event = False
+                    for true_event in events_samples: # Check if this event is equivalent to any of the true events
+                        if abs(eventSample - true_event[0]) < 12800 or \
+                            eventSample < 12800 + 2 * int(margin_ratio * self.m_signalBaseLength) or \
+                            eventSample > sample.shape[0]  - (12800 + 2 * int(margin_ratio * self.m_signalBaseLength)):
+                            
+                            invalid_event = True
 
-                invalid_event = False
-                for true_event in events_samples: # Check if this event is equivalent to any of the true events
-                    if abs(eventSample - true_event[0]) < 12800 or \
-                        eventSample < 12800 + 2 * int(margin_ratio * self.m_signalBaseLength) or \
-                        eventSample > sample.shape[0]  - (12800 + 2 * int(margin_ratio * self.m_signalBaseLength)):
-                        
-                        invalid_event = True
+                    if invalid_event or abs(eventSample - last_event) < 12800: # If this is an invalid event, goes to the next one
+                        continue
 
-                if invalid_event or abs(eventSample - last_event) < 12800: # If this is an invalid event, goes to the next one
-                    continue
+                    valid += 1
+                    last_event = eventSample
 
-                valid += 1
-                last_event = eventSample
+                    margin_ratio = 0
+                    if "MARGIN_RATIO" in self.configs:
+                        margin_ratio = self.configs["MARGIN_RATIO"]
 
-                margin_ratio = 0
-                if "MARGIN_RATIO" in self.configs:
-                    margin_ratio = self.configs["MARGIN_RATIO"]
+                    initSample = eventSample - random.randrange(0, self.m_signalBaseLength)
+                    out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, -1)
+                    signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
+                                    initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
 
-                initSample = eventSample - random.randrange(0, self.m_signalBaseLength)
-                out_detection, out_type, out_classification = self.mapSignal(event, events_duration, initSample, -1)
-                signal = sample[initSample - int(margin_ratio * self.m_signalBaseLength) : \
-                                initSample + self.m_signalBaseLength + int(margin_ratio * self.m_signalBaseLength)]
+                    if sum(np.max(out_classification, axis=0)) == 0:
+                        valid -= 1
+                        continue
 
-                if sum(np.max(out_classification, axis=0)) == 0:
-                    valid -= 1
-                    continue
-
-                if output_x.size == 0:
-                    output_x = np.expand_dims(signal, axis = 0)
-                    output_detection = np.expand_dims(out_detection, axis=0)
-                    output_classification = np.expand_dims(out_classification, axis=0)
-                    output_type = np.expand_dims(out_type, axis=0)
-                else:
-                    output_x = np.vstack((output_x, np.expand_dims(signal, axis = 0)))
-                    output_detection = np.vstack((output_detection, np.expand_dims(out_detection, axis=0)))
-                    output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
-                    output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
+                    if output_x.size == 0:
+                        output_x = np.expand_dims(signal, axis = 0)
+                        output_detection = np.expand_dims(out_detection, axis=0)
+                        output_classification = np.expand_dims(out_classification, axis=0)
+                        output_type = np.expand_dims(out_type, axis=0)
+                    else:
+                        output_x = np.vstack((output_x, np.expand_dims(signal, axis = 0)))
+                        output_detection = np.vstack((output_detection, np.expand_dims(out_detection, axis=0)))
+                        output_classification = np.vstack((output_classification, np.expand_dims(out_classification, axis=0)))
+                        output_type = np.vstack((output_type, np.expand_dims(out_type, axis=0)))
 
 
-            # print(f"Found {total} events, but only {valid} is/are valid!")
+                # print(f"Found {total} events, but only {valid} is/are valid!")
+            
             # =========================================================================================================
         
         return output_x, output_detection, output_classification, output_type

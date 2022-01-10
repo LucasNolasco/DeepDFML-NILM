@@ -64,6 +64,7 @@ This implementation uses a dict structure to define some of the execution parame
 * `N_CLASS`: Total of loads on the dataset (default = 26).
 * `SIGNAL_BASE_LENGTH`: Total of mapped samples on each signal cut (default = 12800, 50 electrical network cycles).
 * `AUGMENTATION_RATIO`: Augmentation ratio. In case this value is greater than 1, the program will generate more cuts for the same event applying a different offset on the window (default = 1). (Deprecated)
+* `USE_HAND_AUGMENTATION`: Flag that indicates if excerpts of signal without events must be added. If true, it uses the HAND algorithm to find those excerpts.
 * `MARGIN_RATIO`: Size of the unmapped margins defined by a portion of the signal. (default = 0.15).
 * `USE_NO_LOAD`: Flag to indicated if the appliance "NO LOAD" must be considered. (Deprecated)
 * `DATASET_PATH`: Path to the .hdf5 file containing the samples.
