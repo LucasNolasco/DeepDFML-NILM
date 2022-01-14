@@ -134,7 +134,8 @@ class ModelHandler:
 
     @staticmethod
     def loadModel(path, type_weights={}):
-        return load_model(path, custom_objects={'sumSquaredError': ModelHandler.sumSquaredError,\
+        return load_model(path, custom_objects={'Scattering1D': Scattering1D,\
+                                                'sumSquaredError': ModelHandler.sumSquaredError,\
                                                 'loss': ModelHandler.weighted_categorical_crossentropy(type_weights),\
                                                 'bce_weighted_loss': ModelHandler.get_bce_weighted_loss(None)})
     
