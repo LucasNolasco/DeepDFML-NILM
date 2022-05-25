@@ -22,10 +22,10 @@ configs = {
     "USE_NO_LOAD": False, 
     "AUGMENTATION_RATIO": 5, 
     "MARGIN_RATIO": 0.15, 
-    "DATASET_PATH": "../Synthetic_Full_iHall.hdf5",
+    "DATASET_PATH": "F:/TCC/programas/Synthetic_Full_iHall.hdf5",
     "TRAIN_SIZE": 0.8,
     "FOLDER_PATH": "../TrainedWeights/new_train/", 
-    "FOLDER_DATA_PATH": "../TrainedWeights/new_train/", 
+    "FOLDER_DATA_PATH": "../TrainedWeights/Final/", 
     "N_EPOCHS_TRAINING": 250,
     "INITIAL_EPOCH": 0,
     "TOTAL_MAX_EPOCHS": 250,
@@ -98,6 +98,10 @@ def main():
             y_test["classification"] = yclass_all[test_index]
 
             folderPath = configs["FOLDER_PATH"] + str(fold) + "/"
+            try:
+                os.mkdir(folderPath)
+            except:
+                pass
 
             np.save(folderPath + "train_index.npy", train_index)
             np.save(folderPath + "test_index.npy", test_index)

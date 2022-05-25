@@ -8,42 +8,42 @@ This repository is the official implementation of the paper [DeepDFML-NILM: A Ne
 
 ## Dependencies
 
-The model was implemented on Python 3 with the following libraries:
+The model was implemented on Python 3.8.6 with the following libraries:
 
-- h5py:
+- h5py (version 3.7.0):
 
     ```
-    $ pip3 install h5py
-    ```
-
-- numpy:
-    ```
-    $ pip3 install numpy
+    $ pip3 install h5py==3.7.0
     ```
 
-- tqdm:
+- numpy (version 1.22.4):
     ```
-    $ pip3 install tqdm
-    ```
-
-- scikit-learn:
-    ```
-    $ pip3 install sklearn
+    $ pip3 install numpy==1.22.4
     ```
 
-- keras:
+- tqdm (version 4.64.0):
     ```
-    $ pip3 install keras
-    ```
-
-- tensorflow:
-    ```
-    $ pip3 install tensorflow
+    $ pip3 install tqdm==4.64.0
     ```
 
-- matplotlib:
+- scikit-learn (version 1.1.1):
     ```
-    $ pip3 install matplotlib
+    $ pip3 install sklearn==1.1.1
+    ```
+
+- keras (version 2.7.0):
+    ```
+    $ pip3 install keras==2.7.0
+    ```
+
+- tensorflow (version 2.7.0):
+    ```
+    $ pip3 install tensorflow==2.7.0
+    ```
+
+- matplotlib (version 3.3.3):
+    ```
+    $ pip3 install matplotlib==3.3.3
     ```
 
 ---
@@ -71,13 +71,13 @@ This implementation uses a dict structure to define some of the execution parame
 
 ## Trained weights
 
-The trained weights may be download from this [link](https://drive.google.com/file/d/18lcnLgRms-Sb_AovSSFTFTPKWgKu5V8Y/view?usp=sharing). To use them, just download and place the `TrainedWeights` folder inside the `DeepDFML-NILM` directory.
+The trained weights may be downloaded from this [link](https://drive.google.com/file/d/18lcnLgRms-Sb_AovSSFTFTPKWgKu5V8Y/view?usp=sharing). To use them, just download and place the `TrainedWeights` folder inside the `DeepDFML-NILM` directory.
 
 ---
 
 ## Dataset Waveforms
 
-The LIT-Dataset is a public dataset and can be download on this [link](http://dainf.ct.utfpr.edu.br/~douglas/LIT_Dataset/index.html). However, only MATLAB tools are provided. In order to use the dataset with this implementation, an version on *.hdf5 can be downloaded on the following [link](https://drive.google.com/file/d/10NL9S8BYioj1U1_phCEoKX4WWRQoBuYW/view?usp=sharing). The dataset is stored on this file on the following hierarchical structure:
+The LIT-Dataset is a public dataset and can be downloaded on this [link](http://dainf.ct.utfpr.edu.br/~douglas/LIT_Dataset/index.html). However, only MATLAB tools are provided. In order to use the dataset with this implementation, an version on *.hdf5 can be downloaded on the following [link](https://drive.google.com/file/d/10NL9S8BYioj1U1_phCEoKX4WWRQoBuYW/view?usp=sharing). The dataset is stored on this file on the following hierarchical structure:
 
 - `1` -> Total number of loads on each waveform
     - `i` -> Array containing all the samples for each waveform

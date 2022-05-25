@@ -52,7 +52,7 @@ Tested with the following package versions:
 
 2. Downloading the weights
 
-    The weights might be download directly from the following [url](https://drive.google.com/file/d/18lcnLgRms-Sb_AovSSFTFTPKWgKu5V8Y/view) on a browser. Another easy option is using the `gdown` program. First of all, it's necessary to install it:
+    The weights might be downloaded directly from the following [url](https://drive.google.com/file/d/18lcnLgRms-Sb_AovSSFTFTPKWgKu5V8Y/view) on a browser. Another easy option is using the `gdown` program. First of all, it's necessary to install it:
 
     ```
     $ pip3 install gdown
